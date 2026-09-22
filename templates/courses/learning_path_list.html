@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Lernpfade - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-1 small">Lernpfade</p>
+        <h1 class="h3 mb-0">Strukturierte Kursreihen</h1>
+    </div>
+</div>
+<div class="row g-4">
+    {% for lernpfad in lernpfade %}
+        <div class="col-md-6 col-xl-4">
+            <div class="course-card h-100">
+                <div class="course-card__body">
+                    
+                    <h2 class="h5"><a href="{% if tenant_org and not single_system_mode %}{% url 'tenant_learning_path_detail' tenant_org.slug lernpfad.slug %}{% else %}{% url 'learning_path_detail' lernpfad.slug %}{% endif %}">{{ lernpfad.titel }}</a></h2>
+                    <p class="text-secondary">{{ lernpfad.beschreibung|truncatewords:24 }}</p>
+                    <span class="badge text-bg-light">{{ lernpfad.pfad_kurse.count }} Kurse</span>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12"><div class="aboro-panel text-secondary">Noch keine Lernpfade veroeffentlicht.</div></div>
+    {% endfor %}
+</div>
+{% endblock %}

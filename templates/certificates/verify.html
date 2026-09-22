@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Zertifikat verifizieren - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="aboro-panel text-center">
+            {% if zertifikat.ist_widerrufen %}
+                <div class="mb-4">
+                    <span style="font-size:3rem;">&#10060;</span>
+                </div>
+                <p class="text-uppercase fw-semibold text-danger mb-2">Zertifikat widerrufen</p>
+                <h1 class="h4 mb-3">Dieses Zertifikat ist nicht mehr gueltig.</h1>
+                <p class="text-secondary">Das Zertifikat wurde vom Aussteller widerrufen.</p>
+            {% else %}
+                <div class="mb-4">
+                    <span style="font-size:3rem; color:#198754;">&#10003;</span>
+                </div>
+                <p class="text-uppercase fw-semibold text-success mb-2">Zertifikat gueltig</p>
+                <h1 class="h4 mb-3">{{ zertifikat.get_titel }}</h1>
+                <p class="lead mb-4">Dieses Zertifikat ist beim Aussteller als gültig registriert.</p>
+                <dl class="row text-start mb-4">
+                    {% if zertifikat.get_organisation %}
+                    <dt class="col-5">Organisation</dt>
+                        <dd class="col-7">{{ zertifikat.get_organisation.name }}</dd>
+                    {% endif %}
+                    <dt class="col-5">Ausgestellt am</dt>
+                    <dd class="col-7">{{ zertifikat.ausgestellt_am|date:"d. F Y" }}</dd>
+                    <dt class="col-5">Zertifikatsnummer</dt>
+                    <dd class="col-7"><strong>{{ zertifikat.zertifikatsnummer|default:"-" }}</strong></dd>
+                    {% if zertifikat.pruefungsversuch %}
+                        <dt class="col-5">Ergebnis</dt>
+                        <dd class="col-7">{{ zertifikat.pruefungsversuch.prozent_erreicht }}% (bestanden)</dd>
+                    {% endif %}
+                    <dt class="col-5">Zertifikat-ID</dt>
+                    <dd class="col-7"><code class="small">{{ zertifikat.code }}</code></dd>
+                </dl>
+                <p class="text-secondary small">Diese öffentliche Prüfung enthält bewusst keine Namen oder Geburtsdaten. Die vollständigen personenbezogenen Angaben stehen ausschließlich auf dem geschützten Zertifikats-PDF des Lernenden.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

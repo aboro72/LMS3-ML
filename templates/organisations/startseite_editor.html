@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Startseite – {{ org.name }} – ABoroLMS{% endblock %}
+
+{% block extra_head %}
+{{ form.media }}
+{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'single_system_startseite' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{{ org.name }}</a></li>
+        <li class="breadcrumb-item active">Startseite</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-1 small">{{ org.name }}</p>
+        <h1 class="h3 mb-1">Eigene Startseite gestalten</h1>
+        <p class="text-secondary mb-0">
+            Öffentliche Adresse:
+            <a href="{% url 'single_system_startseite' %}" target="_blank">
+                /{{ org.slug }}/
+            </a>
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'single_system_pagebuilder' %}">PageBuilder</a>
+        <a class="btn btn-outline-secondary" href="{% url 'single_system_startseite' %}" target="_blank">Vorschau</a>
+        <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Zurück</a>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+
+            <div class="aboro-panel mb-4">
+                <div class="form-check form-switch mb-3">
+                    {{ form.aktiv }}
+                    <label class="form-check-label fw-semibold" for="{{ form.aktiv.id_for_label }}">
+                        {{ form.aktiv.label }}
+                    </label>
+                    <div class="form-text">{{ form.aktiv.help_text }}</div>
+                    {% if form.aktiv.errors %}<div class="text-danger small">{{ form.aktiv.errors }}</div>{% endif %}
+                </div>
+                {% if not single_system_mode %}<label class="form-label fw-semibold" for="{{ weiterleitung_form.weiterleitungs_url.id_for_label }}">{{ weiterleitung_form.weiterleitungs_url.label }}</label>
+                {{ weiterleitung_form.weiterleitungs_url }}
+                <div class="form-text">{{ weiterleitung_form.weiterleitungs_url.help_text }}</div>
+                {% if weiterleitung_form.weiterleitungs_url.errors %}<div class="text-danger small mt-1">{{ weiterleitung_form.weiterleitungs_url.errors }}</div>{% endif %}{% endif %}
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Hero-Bereich</h2>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.hero_titel.label }}</label>
+                        {{ form.hero_titel }}
+                        {% if form.hero_titel.errors %}<div class="text-danger small mt-1">{{ form.hero_titel.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.hero_untertitel.label }}</label>
+                        {{ form.hero_untertitel }}
+                        {% if form.hero_untertitel.errors %}<div class="text-danger small mt-1">{{ form.hero_untertitel.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-8">
+                        <label class="form-label fw-semibold">{{ form.hero_bild.label }}</label>
+                        {{ form.hero_bild }}
+                        {% if form.hero_bild.errors %}<div class="text-danger small mt-1">{{ form.hero_bild.errors }}</div>{% endif %}
+                        <div class="form-text">Empfehlung: 1920 × 600 px, JPG oder WebP</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-semibold">{{ form.hero_button_text.label }}</label>
+                        {{ form.hero_button_text }}
+                        {% if form.hero_button_text.errors %}<div class="text-danger small mt-1">{{ form.hero_button_text.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Seiteninhalt <span class="badge text-bg-secondary ms-1">WYSIWYG</span></h2>
+                <p class="text-secondary small mb-3">
+                    Gestalten Sie den Hauptbereich Ihrer Startseite frei: Texte, Bilder,
+                    Tabellen, Listen – alles was Sie im Editor sehen, erscheint auf der Seite.
+                </p>
+                {{ form.inhalt }}
+                {% if form.inhalt.errors %}<div class="text-danger small mt-1">{{ form.inhalt.errors }}</div>{% endif %}
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-aboro">Startseite speichern</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Abbrechen</a>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="aboro-panel">
+                <h2 class="h5 mb-3">Tipps</h2>
+                <ul class="list-unstyled mb-0" style="font-size:.9rem;">
+                    <li class="mb-2">
+                        <strong>Hero-Bereich</strong><br>
+                        <span class="text-secondary">Großes Titelbild oben auf der Seite mit Überschrift und CTA-Button.</span>
+                    </li>
+                    <li class="mb-2">
+                        <strong>Seiteninhalt</strong><br>
+                        <span class="text-secondary">Unterhalb des Heros – ideal für Vorteile, FAQs oder Testimonials.</span>
+                    </li>
+                    <li class="mb-2">
+                        <strong>Kurse</strong><br>
+                        <span class="text-secondary">Die 6 neuesten Kurse werden automatisch am Ende der Seite eingeblendet.</span>
+                    </li>
+                    <li class="mb-2">
+                        <strong>Design</strong><br>
+                        <span class="text-secondary">
+                            Farben und Logo passen Sie unter
+                            <a href="{% url 'system_design' %}">Design</a> an.
+                        </span>
+                    </li>
+                    <li>
+                        <strong>Aktivierung</strong><br>
+                        <span class="text-secondary">Solange die Seite deaktiviert ist, wird sie nicht öffentlich angezeigt.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

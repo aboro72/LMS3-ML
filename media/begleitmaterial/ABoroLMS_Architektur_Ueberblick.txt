@@ -1,0 +1,18 @@
+ABoroLMS Architektur – Kurzreferenz
+====================================
+
+Apps und Zustaendigkeiten:
+  accounts      -> Nutzer, Rollen, UserProfile, Einladungen
+  organisations -> Org-Modell, Lizenz, Org-Admin-Dashboard
+  courses       -> Kurse, Lektionen, Fortschritt, Einschreibung
+  exams         -> Katalog, Pruefungen, Versuche, Examiner-Queue
+  payments      -> Zahlungsarten, 85/15-Split, Auszahlungen
+  certificates  -> Zertifikat-Model, PDF, QR-Verifikation
+
+Mandantenfaehigkeit: ForeignKey Organisation + QuerySet-Filter
+Keine separaten Schemas – eine Installation fuer alle Mandanten
+
+Key-Settings:
+  PLATFORM_COMMISSION_PERCENT = 15
+  PAYMENT_DEMO_AUTOCONFIRM    = True  (nur Demo!)
+  MEDIA_ROOT                  = <Pfad zu hochgeladenen Dateien>

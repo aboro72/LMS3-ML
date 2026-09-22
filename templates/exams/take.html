@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pruefung.titel }} ablegen - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="exam-shell">
+    <div id="examStatus" class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="status">
+        <span><strong id="examStatusText">Prüfung wird vorbereitet.</strong><br><small>Die Prüfung läuft nur im Vollbildmodus. Antworten werden automatisch gespeichert.</small></span>
+        <span id="examTimer" class="badge text-bg-dark fs-6" data-limit="{{ zeitlimit_sekunden }}" data-used="{{ aktive_sekunden }}" data-remaining="{{ restliche_sekunden }}">--:--</span>
+    </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h4 mb-0">{{ pruefung.titel }}</h1>
+        <span class="badge text-bg-light">{% if uebersicht %}Prüfungsübersicht{% else %}Frage {{ index|add:1 }} von {{ gesamt }}{% endif %}</span>
+    </div>
+    {% if uebersicht %}
+    <div class="aboro-panel">
+        <h2 class="h5">Frage auswählen</h2>
+        <p class="text-secondary">Ihre gespeicherten Antworten bleiben erhalten. Die Prüfung läuft weiter.</p>
+        <div class="d-flex flex-wrap gap-2">
+            {% for position in fragenpositionen %}<a class="btn btn-outline-primary" href="?index={{ position }}">Frage {{ position|add:1 }}</a>{% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <form id="examAnswerForm" class="aboro-panel" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="index" value="{{ index }}">
+        {% if frage %}
+            <div class="lesson-content mb-4">{{ frage.fragetext.html|safe }}</div>
+            {% if frage.typ == "SC" or frage.typ == "WF" %}
+                {% for antwort in antworten %}
+                    <label class="exam-option">
+                        <input type="radio" name="antworten" value="{{ antwort.id }}"{% if antwort.id in ausgewaehlte_antwort_ids %} checked{% endif %}>
+                        <span>{{ antwort.antworttext }}</span>
+                    </label>
+                {% endfor %}
+            {% elif frage.typ == "MC" %}
+                {% for antwort in antworten %}
+                    <label class="exam-option">
+                        <input type="checkbox" name="antworten" value="{{ antwort.id }}"{% if antwort.id in ausgewaehlte_antwort_ids %} checked{% endif %}>
+                        <span>{{ antwort.antworttext }}</span>
+                    </label>
+                {% endfor %}
+            {% elif frage.typ == "FT" or frage.typ == "SZ" %}
+                <label class="form-label fw-semibold" for="freitextAntwort">Ihre Antwort</label>
+                <textarea class="form-control" id="freitextAntwort" name="freitext_antwort" rows="8" placeholder="Begründen Sie Ihre Antwort nachvollziehbar.">{{ bestehende_antwort.freitext_antwort }}</textarea>
+                <div class="form-text">Ihre Antwort wird gespeichert und anschließend von einem Prüfer bewertet.</div>
+            {% elif frage.typ == "ZO" %}
+                <input type="hidden" name="zuordnung_json" id="zuordnungJsonInput" value="{{ zuordnung_json }}">
+                <div class="mb-3">
+                    {% with zuordnungen=frage.zuordnungen.all %}
+                        {% for paar in zuordnungen %}
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="flex-grow-1 exam-option mb-0 py-2">
+                                    <span class="fw-semibold">{{ paar.linkes_element }}</span>
+                                </div>
+                                <span class="text-secondary">&rarr;</span>
+                                <select class="form-select flex-grow-1 zuordnung-select"
+                                        data-paar-id="{{ paar.id }}"
+                                        data-selected="{{ zuordnung_json }}"
+                                        style="max-width:50%;">
+                                    <option value="">-- Bitte waehlen --</option>
+                                    {% for r in zuordnungen %}
+                                        <option value="{{ r.rechtes_element }}">{{ r.rechtes_element }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endfor %}
+                    {% endwith %}
+                </div>
+            {% endif %}
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <button class="btn btn-outline-secondary me-auto" name="direction" value="previous" type="submit">Zurück</button>
+                {% if is_last %}
+                    <button class="btn btn-aboro" name="finish" value="1" type="submit">Pruefung abgeben</button>
+                {% else %}
+                    <button class="btn btn-aboro" type="submit">Speichern und weiter</button>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="text-secondary mb-0">Keine Frage gefunden.</p>
+        {% endif %}
+    </form>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const shell = document.querySelector('.exam-shell');
+    const status = document.getElementById('examStatus');
+    const statusText = document.getElementById('examStatusText');
+    const timer = document.getElementById('examTimer');
+    const form = document.getElementById('examAnswerForm');
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const resumeUrl = "{% url 'exam_resume' pruefung.pk versuch.pk %}";
+    const pauseUrl = "{% url 'exam_pause' pruefung.pk versuch.pk %}";
+    const autosaveUrl = "{% url 'exam_autosave' pruefung.pk versuch.pk %}";
+    let paused = true;
+    let remaining = Number(timer?.dataset.remaining || 0);
+    let lastTick = Date.now();
+    function showTime() {
+        if (!timer || !remaining) { if (timer) timer.textContent = 'Keine Zeitbegrenzung'; return; }
+        const seconds = Math.max(0, Math.ceil(remaining));
+        timer.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+    }
+    async function send(url, body) {
+        const response = await fetch(url, {method: 'POST', headers: {'X-CSRFToken': csrf, 'Content-Type': 'application/json'}, body: JSON.stringify(body || {})});
+        return response.json();
+    }
+    function setPaused(value, text) {
+        paused = value;
+        if (statusText) statusText.textContent = text;
+        if (form) form.querySelectorAll('input, textarea, select, button').forEach(el => { el.disabled = value; });
+        if (status) status.classList.toggle('alert-warning', value);
+        if (status) status.classList.toggle('alert-success', !value);
+    }
+    async function enterFullscreen() {
+        if (!shell || !document.fullscreenEnabled) { setPaused(true, 'Vollbild wird von diesem Browser nicht unterstützt.'); return false; }
+        try { await shell.requestFullscreen({navigationUI: 'hide'}); } catch (e) { setPaused(true, 'Bitte Vollbild erlauben, um die Prüfung zu starten.'); return false; }
+        const result = await send(resumeUrl, {fullscreen: true});
+        if (!result.ok) { setPaused(true, result.error || 'Prüfung kann nicht fortgesetzt werden.'); return false; }
+        setPaused(false, 'Prüfung läuft – Antworten werden automatisch gespeichert.');
+        lastTick = Date.now();
+        return true;
+    }
+    function pauseForInterruption() {
+        if (!paused) { paused = true; send(pauseUrl).catch(() => {}); setPaused(true, 'Prüfung pausiert. Vollbild erneut aktivieren, um fortzusetzen.'); }
+    }
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement) pauseForInterruption(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) pauseForInterruption(); });
+    if (shell && !{{ uebersicht|yesno:'true,false' }}) {
+        const start = document.createElement('button'); start.type = 'button'; start.className = 'btn btn-aboro mb-3'; start.textContent = 'Vollbild aktivieren und Prüfung fortsetzen';
+        shell.insertBefore(start, shell.children[1]); start.addEventListener('click', async () => { if (await enterFullscreen()) start.remove(); });
+        setPaused(true, 'Bitte Vollbild aktivieren, um die Prüfung zu starten oder fortzusetzen.');
+    }
+    setInterval(() => { if (!paused && remaining > 0) { const now = Date.now(); remaining -= (now - lastTick) / 1000; lastTick = now; showTime(); if (remaining <= 0) pauseForInterruption(); } }, 1000);
+    setInterval(() => { if (!paused) send(autosaveUrl, {heartbeat: true}).then(result => { if (result.restliche_sekunden !== null && result.restliche_sekunden !== undefined) { remaining = result.restliche_sekunden; lastTick = Date.now(); showTime(); } }).catch(() => pauseForInterruption()); }, 5000);
+    showTime();
+    if (form) {
+        let autosaveTimer;
+        const collect = () => {
+            const data = {frage_id: Number(form.querySelector('[name=index]').value)};
+            const checks = [...form.querySelectorAll('[name=antworten]:checked')]; if (checks.length) data.antworten = checks.map(el => el.value);
+            const text = form.querySelector('[name=freitext_antwort]'); if (text) data.freitext_antwort = text.value;
+            const mapping = document.getElementById('zuordnungJsonInput'); if (mapping) { const selects = [...form.querySelectorAll('.zuordnung-select')]; const obj = {}; selects.forEach(sel => { if (sel.value) obj[sel.dataset.paarId] = sel.value; }); data.zuordnung_json = JSON.stringify(obj); }
+            return data;
+        };
+        const autosave = () => { if (!paused) send(autosaveUrl, collect()).catch(() => setPaused(true, 'Verbindung unterbrochen. Prüfung pausiert.')); };
+        form.addEventListener('input', () => { clearTimeout(autosaveTimer); autosaveTimer = setTimeout(autosave, 600); });
+        form.addEventListener('change', autosave);
+        window.addEventListener('beforeunload', () => { if (!paused) navigator.sendBeacon(pauseUrl, new Blob(['{}'], {type: 'application/json'})); });
+    }
+    const selects = document.querySelectorAll('.zuordnung-select');
+    if (!selects.length) return;
+
+    const raw = selects[0].dataset.selected || '{}';
+    let existing = {};
+    try { existing = JSON.parse(raw); } catch (e) {}
+    selects.forEach(function (sel) {
+        const val = existing[sel.dataset.paarId];
+        if (val) {
+            for (let i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === val) { sel.selectedIndex = i; break; }
+            }
+        }
+    });
+
+    const form = document.getElementById('examAnswerForm');
+    const hidden = document.getElementById('zuordnungJsonInput');
+    if (form && hidden) {
+        form.addEventListener('submit', function () {
+            const mapping = {};
+            selects.forEach(function (sel) {
+                if (sel.value) mapping[sel.dataset.paarId] = sel.value;
+            });
+            hidden.value = JSON.stringify(mapping);
+        });
+    }
+})();
+</script>
+{% endblock %}

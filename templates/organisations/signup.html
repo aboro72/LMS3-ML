@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Organisation erstellen - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Organisation erstellen</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="aboro-panel">
+            <p class="text-uppercase text-aboro-orange fw-semibold mb-2 small">ABoroLMS Selfhosting</p>
+            <h1 class="h3 mb-2">Organisation erstellen</h1>
+            <p class="text-secondary mb-4">
+                Erstelle deine eigene Organisation und werde automatisch Org-Admin.
+                Du kannst danach Trainer, Pruefer und Lernende einladen.
+            </p>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                {% endfor %}
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-aboro" type="submit">Organisation erstellen</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Abbrechen</a>
+                </div>
+            </form>
+        </div>
+        <div class="aboro-panel mt-3">
+            <h2 class="h6 mb-2">Was bekommst du mit einer Organisation?</h2>
+            <ul class="text-secondary small mb-0">
+                <li>Eigene Kurse, Fragenkataloge und Pruefungen</li>
+                <li>Einladungen fuer Trainer, Pruefer und Lernende</li>
+                <li>Einnahmen-Tracking mit 85/15-Aufteilung</li>
+                <li>Ausbaubar auf Pro- und Enterprise-Lizenz</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

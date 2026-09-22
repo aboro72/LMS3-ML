@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout - {{ kurs.titel }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="aboro-panel">
+            <p class="text-uppercase text-aboro-orange fw-semibold mb-2">Checkout</p>
+            <h1 class="h3 mb-3">{{ kurs.titel }}</h1>
+            <div class="payment-summary mb-4">
+                <div class="d-flex justify-content-between">
+                    <span>Kurszugang</span>
+                    <strong>{{ kurs.preis }} EUR</strong>
+                </div>
+                <div class="small text-secondary mt-2">
+                    Nach bestaetigter Zahlung ist der Zugriff dauerhaft freigeschaltet.
+                </div>
+            </div>
+            {% if has_payment_methods %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="payment-methods mb-4">
+                        {{ form.zahlungsart }}
+                    </div>
+                    {% if payment_settings.ueberweisung_aktiv and payment_settings.iban %}
+                        <div class="alert alert-light border">
+                            <strong>Ueberweisung:</strong>
+                            {{ payment_settings.kontoinhaber }} · IBAN {{ payment_settings.iban }}
+                            {% if payment_settings.bic %} · BIC {{ payment_settings.bic }}{% endif %}
+                        </div>
+                    {% endif %}
+                    <button class="btn btn-aboro" type="submit">Zahlung starten</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'course_detail' kurs.slug %}">Zurueck</a>
+                </form>
+            {% else %}
+                <div class="alert alert-warning">
+                    Zahlungen sind derzeit nicht verfügbar. Bitte versuche es später erneut.
+                </div>
+                <a class="btn btn-outline-secondary" href="{% url 'course_detail' kurs.slug %}">Zurueck</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

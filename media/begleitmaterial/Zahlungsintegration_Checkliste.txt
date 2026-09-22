@@ -1,0 +1,17 @@
+ABoroLMS Zahlungsintegration – Checkliste
+==========================================
+
+Demo-Betrieb (sofort nutzbar):
+  [x] PAYMENT_DEMO_AUTOCONFIRM = True in Settings
+  [x] Zahlungseinstellungen im Admin: demo_autoconfirm aktivieren
+  [x] Ueberweisung: IBAN, BIC, Kontoinhaber eintragen
+
+Produktionsbetrieb (erfordert API-Keys):
+  [ ] Stripe: stripe_aktiv=True, API-Keys eintragen, Webhook konfigurieren
+  [ ] PayPal: paypal_aktiv=True, Client-ID + Secret eintragen
+  [ ] Google Pay: google_pay_aktiv=True (ueber Stripe)
+  [ ] PAYMENT_DEMO_AUTOCONFIRM = False
+
+Auszahlungen:
+  Trainer-Anteil 85 %, Plattform 15 % (aenderbar ueber PLATFORM_COMMISSION_PERCENT)
+  Status: OFFEN -> GEMELDET -> AUSGEZAHLT (manuell im Superadmin)

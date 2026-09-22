@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Anmelden – ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-sm-10 col-md-7 col-lg-5 col-xl-4">
+        <div class="aboro-panel">
+            <h1 class="h4 mb-1">Anmelden</h1>
+            <p class="text-secondary small mb-4">
+                Noch kein Konto?
+                <a href="{% if tenant_org and not single_system_mode %}{% url 'tenant_register' tenant_org.slug %}{% else %}{% url 'register' %}{% endif %}">Jetzt registrieren</a>
+            </p>
+
+            <div class="mb-4">
+                <div class="small text-secondary mb-2">Demo-Zugang</div>
+                <div class="d-grid gap-2">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <form method="post" action="{{ request.get_full_path }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="login" value="orgadmin">
+                                <input type="hidden" name="password" value="ChangeMe123!">
+                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Org-Admin</button>
+                            </form>
+                        </div>
+                        <div class="col-6">
+                            <form method="post" action="{{ request.get_full_path }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="login" value="trainer">
+                                <input type="hidden" name="password" value="ChangeMe123!">
+                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Trainer</button>
+                            </form>
+                        </div>
+                        <div class="col-6">
+                            <form method="post" action="{{ request.get_full_path }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="login" value="examiner">
+                                <input type="hidden" name="password" value="ChangeMe123!">
+                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Pruefer</button>
+                            </form>
+                        </div>
+                        <div class="col-6">
+                            <form method="post" action="{{ request.get_full_path }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="login" value="learner">
+                                <input type="hidden" name="password" value="ChangeMe123!">
+                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Lernender</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" action="{{ request.get_full_path }}" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2 small">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ form.login.id_for_label }}">
+                        {{ form.login.label }}
+                    </label>
+                    {{ form.login }}
+                    {% if form.login.errors %}
+                        <div class="text-danger small mt-1">{{ form.login.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <label class="form-label fw-semibold" for="{{ form.password.id_for_label }}">
+                            {{ form.password.label }}
+                        </label>
+                        <a class="small" href="{% url 'account_reset_password' %}">Passwort vergessen?</a>
+                    </div>
+                    {{ form.password }}
+                    {% if form.password.errors %}
+                        <div class="text-danger small mt-1">{{ form.password.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-4 form-check">
+                    {{ form.remember }}
+                    <label class="form-check-label" for="{{ form.remember.id_for_label }}">
+                        {{ form.remember.label }}
+                    </label>
+                </div>
+
+                <button class="btn btn-aboro w-100" type="submit">Anmelden</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

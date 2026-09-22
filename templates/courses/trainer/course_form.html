@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Kurs bearbeiten - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'trainer_course_list' %}">Trainer Kurse</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Kurs</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="aboro-panel">
+            <h1 class="h3 mb-4">{% if object %}Kurs bearbeiten{% else %}Kurs erstellen{% endif %}</h1>
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                <div class="alert alert-light border small">
+                    <strong>Angebotstyp:</strong> Für einen normalen Lernkurs wählen Sie „Kompletter Kurs“. Für eine Prüfung ohne Lektionen wählen Sie „Reine Zertifikatsprüfung“ und ordnen die zuvor erstellte Prüfung zu.
+                </div>
+                {{ form.as_p }}
+                <button class="btn btn-aboro" type="submit">Speichern</button>
+                <a class="btn btn-outline-secondary ms-2" href="{% url 'trainer_category_list' %}">Kategorien verwalten</a>
+            </form>
+        </div>
+    </div>
+
+    {% if object %}
+        <div class="col-lg-5">
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Abschnitt erstellen</h2>
+                <form method="post" action="{% url 'trainer_section_create' object.slug %}">
+                    {% csrf_token %}
+                    {{ abschnitt_form.as_p }}
+                    <button class="btn btn-outline-secondary" type="submit">Abschnitt hinzufuegen</button>
+                </form>
+            </div>
+
+            <div class="aboro-panel">
+                <h2 class="h5 mb-3">Kursstruktur</h2>
+                <div id="courseStructure">
+                    {% for abschnitt in abschnitte %}
+                        <section class="trainer-section mb-4">
+                            <h3 class="h6">{{ abschnitt.titel }}</h3>
+                            <div class="lesson-sortable list-group mb-3" data-section-id="{{ abschnitt.id }}">
+                                {% for lektion in abschnitt.lektionen.all %}
+                                    <div class="list-group-item" data-lesson-id="{{ lektion.id }}">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span>{{ lektion.titel }}</span>
+                                            <span class="small text-secondary">{{ lektion.get_typ_display }}</span>
+                                        </div>
+                                        {% if lektion.materialien.all %}
+                                            <div class="small text-secondary mt-2">{{ lektion.materialien.count }} Begleitmaterialien</div>
+                                        {% endif %}
+                                        {% if lektion.uebungsfragen.all %}
+                                            <div class="small text-secondary">{{ lektion.uebungsfragen.count }} Uebungsfragen</div>
+                                        {% endif %}
+                                        <details class="mt-3">
+                                            <summary>Video/Dokument der Lektion aktualisieren</summary>
+                                            <form class="mt-3" method="post" enctype="multipart/form-data" action="{% url 'trainer_lesson_media_update' object.slug lektion.id %}">
+                                                {% csrf_token %}
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="lesson-{{ lektion.id }}-typ">Lektionstyp</label>
+                                                    <select class="form-select" id="lesson-{{ lektion.id }}-typ" name="typ">
+                                                        <option value="VIDEO" {% if lektion.typ == "VIDEO" %}selected{% endif %}>Video</option>
+                                                        <option value="DOKUMENT" {% if lektion.typ == "DOKUMENT" %}selected{% endif %}>Dokument</option>
+                                                        <option value="TEXT" {% if lektion.typ == "TEXT" %}selected{% endif %}>Text/HTML</option>
+                                                        <option value="QUIZ" {% if lektion.typ == "QUIZ" %}selected{% endif %}>Mini-Quiz</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="lesson-{{ lektion.id }}-video-url">Video-URL</label>
+                                                    <input class="form-control" id="lesson-{{ lektion.id }}-video-url" name="video_url" type="url" value="{{ lektion.video_url }}">
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="lesson-{{ lektion.id }}-datei">Upload-Datei</label>
+                                                    <input class="form-control" id="lesson-{{ lektion.id }}-datei" name="datei" type="file" accept=".mp4,.webm,.mov,.m4v,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip">
+                                                    {% if lektion.datei %}<div class="form-text">Aktuell: {{ lektion.datei.name }}</div>{% endif %}
+                                                    {% if lektion.video_thumbnail %}<img class="img-fluid rounded border mt-2" src="{{ lektion.video_thumbnail.url }}" alt="Thumbnail fuer {{ lektion.titel }}">{% endif %}
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-secondary" type="submit">Medium speichern</button>
+                                            </form>
+                                        </details>
+                                        <details class="mt-3">
+                                            <summary>Begleitmaterial hinzufuegen</summary>
+                                            <form class="mt-3" method="post" enctype="multipart/form-data" action="{% url 'trainer_material_create' object.slug lektion.id %}">
+                                                {% csrf_token %}
+                                                {{ material_form.as_p }}
+                                                <button class="btn btn-sm btn-outline-secondary" type="submit">Material speichern</button>
+                                            </form>
+                                        </details>
+                                        <details class="mt-3">
+                                            <summary>Uebungsfrage hinzufuegen</summary>
+                                            <form class="mt-3" method="post" action="{% url 'trainer_exercise_question_create' object.slug lektion.id %}">
+                                                {% csrf_token %}
+                                                {{ uebungsfrage_form.as_p }}
+                                                <button class="btn btn-sm btn-outline-secondary" type="submit">Frage speichern</button>
+                                            </form>
+                                        </details>
+                                        {% for frage in lektion.uebungsfragen.all %}
+                                            <details class="mt-3">
+                                                <summary>Antwort zu: {{ frage.frage|truncatechars:60 }}</summary>
+                                                <div class="small text-secondary mt-2">
+                                                    {% for antwort in frage.antworten.all %}
+                                                        <div>{% if antwort.ist_korrekt %}Richtig:{% else %}Falsch:{% endif %} {{ antwort.antwort }}</div>
+                                                    {% empty %}
+                                                        <div>Noch keine Antworten.</div>
+                                                    {% endfor %}
+                                                </div>
+                                                <form class="mt-3" method="post" action="{% url 'trainer_exercise_answer_create' object.slug frage.id %}">
+                                                    {% csrf_token %}
+                                                    {{ uebungsantwort_form.as_p }}
+                                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Antwort speichern</button>
+                                                </form>
+                                            </details>
+                                        {% endfor %}
+                                    </div>
+                                {% empty %}
+                                    <div class="list-group-item text-secondary">Keine Lektionen.</div>
+                                {% endfor %}
+                            </div>
+                            <details>
+                                <summary>Lektion hinzufuegen</summary>
+                                <div class="alert alert-light border mt-3 mb-3">
+                                    <strong>Video-Lektion:</strong> Typ auf Video setzen und entweder eine Video-Datei hochladen
+                                    oder eine externe Video-URL eintragen. Fuer Selfhosting sind MP4 oder WebM ideal.
+                                </div>
+                                <form class="mt-3" method="post" enctype="multipart/form-data" action="{% url 'trainer_lesson_create' object.slug abschnitt.id %}">
+                                    {% csrf_token %}
+                                    {{ lektion_form.as_p }}
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Lektion speichern</button>
+                                </form>
+                            </details>
+                        </section>
+                    {% empty %}
+                        <p class="text-secondary mb-0">Noch keine Abschnitte.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+    document.querySelectorAll(".lesson-sortable").forEach((element) => {
+        new Sortable(element, {
+            animation: 150
+        });
+    });
+</script>
+{% endblock %}

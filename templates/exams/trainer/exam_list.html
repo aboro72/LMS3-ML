@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Pruefungen - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Pruefungen</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Pruefungen</h1>
+        <p class="text-secondary mb-0">Zertifikatspruefungen konfigurieren und aktivieren.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'trainer_catalog_list' %}">Fragenkataloge</a>
+        {% if ist_exam_operator %}<a class="btn btn-aboro" href="{% url 'trainer_exam_create' %}">Zertifikatsprüfung erstellen</a>{% endif %}
+    </div>
+</div>
+
+<div class="aboro-panel">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+            <tr>
+                <th>Titel</th>
+                {% if not single_system_mode %}<th>Organisation</th>{% endif %}
+                <th>Fragen</th>
+                <th>Zeitlimit</th>
+                <th>Bestehensgrenze</th>
+                <th>Status</th>
+                <th class="text-end">Aktionen</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for pruefung in pruefungen %}
+                <tr>
+                    <td class="fw-semibold">{{ pruefung.titel }}</td>
+                    {% if not single_system_mode %}<td>{{ pruefung.organisation.name }}</td>{% endif %}
+                    <td>{{ pruefung.anzahl_fragen }}</td>
+                    <td>{% if pruefung.zeitlimit_minuten %}{{ pruefung.zeitlimit_minuten }} Min.{% else %}-{% endif %}</td>
+                    <td>{{ pruefung.bestehensgrenze_prozent }}%</td>
+                    <td>
+                        {% if pruefung.ist_aktiv %}
+                            <span class="badge text-bg-success">Aktiv</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inaktiv</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_exam_stats' pruefung.pk %}">Statistik</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_exam_results' pruefung.pk %}">Ergebnisse</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_exam_approvals' pruefung.pk %}">Freigaben</a>
+                        {% if ist_exam_operator %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_exam_edit' pruefung.pk %}">Bearbeiten</a>{% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7" class="text-secondary py-3">Noch keine Pruefungen.{% if ist_exam_operator %} <a href="{% url 'trainer_exam_create' %}">Erste Pruefung erstellen</a>.{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

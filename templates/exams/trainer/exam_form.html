@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Pruefung bearbeiten{% else %}Pruefung erstellen{% endif %} - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'trainer_exam_list' %}">Pruefungen</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% if object %}{{ object.titel }}{% else %}Neu{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(() => {
+    const area = document.getElementById("themenquoten");
+    const rows = document.getElementById("themenquoten-zeilen");
+    const addButton = document.getElementById("thema-hinzufuegen");
+    const emptyForm = document.getElementById("themaquote-leerformular");
+    const totalForms = document.getElementById("id_themenquoten-TOTAL_FORMS");
+    const catalogSelect = document.getElementById("id_fragenkatalog");
+    const emptyNote = document.getElementById("keine-themenquoten");
+    let topics = [];
+
+    const syncEmptyNote = () => {
+        emptyNote.hidden = [...rows.querySelectorAll(".themaquote-zeile")].every((row) => row.hidden);
+    };
+
+    const updateTopicSelects = () => {
+        rows.querySelectorAll("[data-topic-select]").forEach((select) => {
+            const selected = select.value;
+            select.replaceChildren(new Option("Thema wählen", ""));
+            topics.forEach((topic) => select.add(new Option(topic.name, topic.id)));
+            select.value = topics.some((topic) => String(topic.id) === selected) ? selected : "";
+        });
+    };
+
+    const loadTopics = async () => {
+        const catalogId = catalogSelect.value;
+        if (!catalogId) {
+            topics = [];
+            updateTopicSelects();
+            return;
+        }
+        const url = area.dataset.topicsUrl.replace("/0/", `/${catalogId}/`);
+        const response = await fetch(url, {headers: {"Accept": "application/json"}});
+        topics = response.ok ? (await response.json()).themen : [];
+        updateTopicSelects();
+    };
+
+    const removeRow = (row) => {
+        const deleteInput = row.querySelector("input[name$='-DELETE']");
+        if (deleteInput) deleteInput.checked = true;
+        row.hidden = true;
+        syncEmptyNote();
+    };
+
+    addButton.addEventListener("click", () => {
+        if (!catalogSelect.value) {
+            catalogSelect.focus();
+            return;
+        }
+        const index = totalForms.value;
+        const fragment = emptyForm.content.cloneNode(true);
+        fragment.querySelectorAll("[name], [id], label").forEach((element) => {
+            ["name", "id", "for"].forEach((attribute) => {
+                if (element.hasAttribute(attribute)) element.setAttribute(attribute, element.getAttribute(attribute).replaceAll("__prefix__", index));
+            });
+        });
+        rows.append(fragment);
+        totalForms.value = Number(index) + 1;
+        updateTopicSelects();
+        syncEmptyNote();
+    });
+
+    rows.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-remove-topic]");
+        if (button) removeRow(button.closest(".themaquote-zeile"));
+    });
+
+    catalogSelect.addEventListener("change", loadTopics);
+    loadTopics();
+    syncEmptyNote();
+})();
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="aboro-panel">
+            <h1 class="h3 mb-1">{% if object %}Pruefung bearbeiten{% else %}Zertifikatsprüfung erstellen{% endif %}</h1>
+            {% if not object %}<p class="text-secondary mb-4">Diese Prüfung kann eigenständig erstellt werden. Ein Online-Kurs ist nicht erforderlich.</p>{% endif %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {% if field.field.widget.input_type == 'checkbox' %}
+                            <div class="form-check">
+                                {{ field }}
+                                {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            </div>
+                        {% else %}
+                            {{ field }}
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                        {% endif %}
+                        {% for error in field.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <div class="border-top pt-4 mt-4" id="themenquoten" data-topics-url="{% url 'trainer_catalog_topics' 0 %}">
+                    <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                        <div><h2 class="h5 mb-1">Fragen nach Themengebieten</h2><p class="text-secondary small mb-0">Fügen Sie für jedes gewünschte Thema eine Quote hinzu. Es gibt keine Begrenzung der Themenzeilen.</p></div>
+                        <button class="btn btn-sm btn-outline-primary flex-shrink-0" type="button" id="thema-hinzufuegen">+ Thema hinzufügen</button>
+                    </div>
+                    <p class="small text-secondary mb-3">Nach der Auswahl des Fragenkatalogs stehen nur dessen Themen zur Auswahl. Die Themenquoten sind Teil der Gesamtzahl oben; alle übrigen Fragen werden zufällig aus dem Katalog ergänzt.</p>
+                    {{ themen_formset.management_form }}
+                    {% if themen_formset.non_form_errors %}{% for error in themen_formset.non_form_errors %}<div class="text-danger small mb-2">{{ error }}</div>{% endfor %}{% endif %}
+                    <div id="themenquoten-zeilen">
+                        {% for thema_form in themen_formset %}
+                            <div class="row g-2 align-items-end mb-2 themaquote-zeile">
+                                <div class="col-sm-7"><label class="form-label small" for="{{ thema_form.thema.id_for_label }}">Thema</label>{{ thema_form.thema }}{% for error in thema_form.thema.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                                <div class="col-sm-3"><label class="form-label small" for="{{ thema_form.anzahl_fragen.id_for_label }}">Anzahl Fragen</label>{{ thema_form.anzahl_fragen }}{% for error in thema_form.anzahl_fragen.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                                <div class="col-sm-2 pb-1">{{ thema_form.DELETE.as_hidden }}{{ thema_form.id }}<button class="btn btn-sm btn-outline-danger w-100" type="button" data-remove-topic>Entfernen</button></div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <template id="themaquote-leerformular">
+                        <div class="row g-2 align-items-end mb-2 themaquote-zeile">
+                            <div class="col-sm-7"><label class="form-label small" for="id_themenquoten-__prefix__-thema">Thema</label>{{ themen_formset.empty_form.thema }}</div>
+                            <div class="col-sm-3"><label class="form-label small" for="id_themenquoten-__prefix__-anzahl_fragen">Anzahl Fragen</label>{{ themen_formset.empty_form.anzahl_fragen }}</div>
+                            <div class="col-sm-2 pb-1">{{ themen_formset.empty_form.DELETE.as_hidden }}{{ themen_formset.empty_form.id }}<button class="btn btn-sm btn-outline-danger w-100" type="button" data-remove-topic>Entfernen</button></div>
+                        </div>
+                    </template>
+                    <p class="small text-secondary mb-0" id="keine-themenquoten">Noch keine Themenquote festgelegt. Die Prüfung zieht dann zufällig aus dem gesamten Katalog.</p>
+                </div>
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn btn-aboro" type="submit">Speichern</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'trainer_exam_list' %}">Abbrechen</a>
+                </div>
+                {% if object %}
+                <div class="border-top pt-4 mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="h5 mb-0">Teilnehmer einladen</h2><a class="btn btn-sm btn-outline-secondary" href="{% url 'system_members' %}">Lernende einladen</a></div>
+                    <p class="text-secondary small">Wählen Sie dort diese Zertifikatsprüfung aus. Der Lernende wird beim Annehmen der Einladung direkt angemeldet.</p>
+                </div>
+                <div class="border-top pt-4 mt-4">
+                    <h2 class="h5 mb-2">Offline-Prüfungsbögen</h2>
+                    <p class="text-secondary small">Erstellt eine neue zufällige Auswahl nach den konfigurierten Themenquoten. Teilnehmerbogen und Lösung verwenden exakt dieselben Fragen und werden dauerhaft archiviert.</p>
+                    <button class="btn btn-outline-primary btn-sm" type="submit" formaction="{% url 'trainer_offline_paper_create' object.pk %}" formmethod="post">Neuen Offline-Prüfungsbogen erstellen</button>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_exam_paper_pdf' object.pk 'teilnehmer' %}">Teilnehmerbogen PDF (ohne LÃ¶sung)</a>
+                        <a class="btn btn-sm btn-outline-primary" href="{% url 'trainer_exam_paper_pdf' object.pk 'trainer' %}">Trainerbogen PDF (mit LÃ¶sung)</a>
+                    </div>
+                    {% if offline_boegen %}
+                    <div class="table-responsive mt-3"><table class="table table-sm align-middle mb-0"><thead><tr><th>Erstellt</th><th>Fragen</th><th>Teilnehmer</th><th>Lösung</th></tr></thead><tbody>{% for bogen in offline_boegen %}<tr><td class="small">{{ bogen.erstellt_am|date:"d.m.Y H:i" }}</td><td>{{ bogen.fragen_reihenfolge|length }}</td><td><a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_offline_paper_download' object.pk bogen.pk 'teilnehmer' %}">PDF</a></td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'trainer_offline_paper_download' object.pk bogen.pk 'loesung' %}">Lösung PDF</a></td></tr>{% endfor %}</tbody></table></div>
+                    {% else %}<p class="text-secondary small mt-3 mb-0">Noch kein Offline-Bogen erzeugt.</p>{% endif %}
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="aboro-panel">
+            <h2 class="h5 mb-3">Hinweise</h2>
+            <ul class="text-secondary small mb-0">
+                <li class="mb-2">Der <strong>Fragenkatalog</strong> muss zuerst unter "Fragenkataloge" angelegt und befuellt sein.</li>
+                <li class="mb-2"><strong>Anzahl Fragen</strong> darf die Gesamtzahl der Katalogeinträge nicht überschreiten. Themenquoten überschreiben diese Angabe und werden addiert.</li>
+                <li class="mb-2">Damit ein Thema auswählbar ist, muss es zuvor an mindestens einer Frage im gewählten Fragenkatalog hinterlegt sein.</li>
+                <li class="mb-2">Mit <strong>Zufaellige Reihenfolge</strong> werden Fragen und Antworten pro Versuch neu gemischt.</li>
+                <li class="mb-2"><strong>Kein Zurueck</strong> verhindert, dass Teilnehmer bereits beantwortete Fragen erneut aufrufen.</li>
+                <li><strong>Max. Versuche</strong> leer lassen fuer unbegrenzte Wiederholungen.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

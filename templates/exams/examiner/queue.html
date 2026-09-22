@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Pruefer-Queue - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Pruefer-Queue</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Pruefer-Queue</h1>
+        <p class="text-secondary mb-0">Offene Freitext- und Szenarioantworten bewerten.</p>
+    </div>
+    {% if antworten %}
+        <span class="badge text-bg-warning fs-6">{{ antworten|length }} offen</span>
+    {% endif %}
+</div>
+
+<div class="aboro-panel">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+            <tr>
+                <th>Teilnehmer</th>
+                <th>Pruefung</th>
+                <th>Frage</th>
+                <th>Versuch</th>
+                <th>Gestartet</th>
+                <th class="text-end">Aktion</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for antwort in antworten %}
+                <tr>
+                    <td>{{ antwort.versuch.nutzer }}</td>
+                    <td>{{ antwort.versuch.pruefung.titel }}</td>
+                    <td class="text-secondary small">{{ antwort.frage.fragetext.html|striptags|truncatechars:60 }}</td>
+                    <td>#{{ antwort.versuch.versuch_nummer }}</td>
+                    <td class="small text-secondary">{{ antwort.versuch.gestartet_am|date:"d.m.Y H:i" }}</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-aboro" href="{% url 'examiner_review' antwort.pk %}">Bewerten</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="6" class="text-secondary py-4 text-center">
+                        Keine offenen Bewertungen. Alle Freitext-Antworten sind bewertet.
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

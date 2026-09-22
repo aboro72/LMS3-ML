@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Dashboard</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Dashboard</h1>
+        <p class="text-secondary mb-0">Willkommen, {{ user.get_full_name|default:user.username }}.</p>
+    </div>
+    {% if ist_superadmin %}
+        <a class="btn btn-aboro" href="{% url 'system_members' %}">Benutzer verwalten</a>
+    {% endif %}
+    <a class="btn btn-outline-secondary" href="{% url 'profile' %}">Mein Profil</a>
+</div>
+
+{% if ist_exam_operator or ist_superadmin %}
+<div class="row g-3 mb-4">
+    <div class="col-md-6"><div class="aboro-panel h-100">
+        <h2 class="h5">Fragenkataloge</h2>
+        <p class="text-secondary">Fragen suchen, bearbeiten, per CSV importieren und aktivieren.</p>
+        <a class="btn btn-aboro" href="{% url 'trainer_catalog_list' %}">Fragenkataloge verwalten</a>
+    </div></div>
+    <div class="col-md-6"><div class="aboro-panel h-100">
+        <h2 class="h5">Prüfungen</h2>
+        <p class="text-secondary">Prüfungen erstellen, Zeitlimit, Bestehensgrenze und PDF-Vorgaben konfigurieren.</p>
+        <a class="btn btn-aboro" href="{% url 'trainer_exam_list' %}">Prüfungen verwalten</a>
+    </div></div>
+</div>
+{% endif %}
+{% if not operator_arbeitsplatz %}
+<div class="row g-3 mb-3">
+    <div class="col-lg-8">
+        <div class="aboro-panel h-100">
+            <h2 class="h5 mb-3">Meine Rollen</h2>
+            {% if profile %}
+                <div class="list-group list-group-flush">
+                    {% for item in profile %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                
+                                <span class="badge text-bg-light ms-2">{{ item.get_rolle_display }}</span>
+                            </div>
+                            {% if item.rolle == "org_admin" %}
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'org_admin_dashboard' item.organisation.slug %}">Dashboard</a>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">Noch keine Rolle zugeordnet. Wenden Sie sich an den Superadmin.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="aboro-panel h-100">
+            <h2 class="h5 mb-3">Naechste Schritte</h2>
+            {% if einschreibungen %}
+                <div class="list-group list-group-flush">
+                    {% for einschreibung in einschreibungen %}
+                        <a class="list-group-item px-0" href="{% url 'course_learn' einschreibung.kurs.slug %}">
+                            <div class="d-flex justify-content-between">
+                                <span>{{ einschreibung.kurs.titel }}</span>
+                                <span class="small text-secondary">{{ einschreibung.fortschritt_prozent }}%</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">Noch keine Kurse eingeschrieben.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{# Zertifikate #}
+<div class="d-flex justify-content-end mb-3"><a class="btn btn-sm btn-outline-secondary" href="{% url 'exam_result_list' %}">Meine Prüfungsergebnisse</a></div>
+<div class="aboro-panel">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Meine Zertifikate</h2>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'cert_list' %}">Alle anzeigen</a>
+    </div>
+    {% if zertifikate %}
+        <div class="list-group list-group-flush">
+            {% for zert in zertifikate %}
+                <div class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-semibold">{{ zert.get_titel }}</span>
+                        <span class="text-secondary small ms-2">{{ zert.ausgestellt_am|date:"d.m.Y" }}</span>
+                    </div>
+                    <a class="btn btn-sm btn-aboro" href="{% url 'cert_download' zert.code %}">PDF</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-secondary mb-0">Noch keine Zertifikate. Bestehe eine Pruefung, um dein erstes zu erhalten.</p>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

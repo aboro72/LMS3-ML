@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if object %}{{ object.titel }}{% else %}Fragenkatalog erstellen{% endif %} - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li><li class="breadcrumb-item"><a href="{% url 'trainer_catalog_list' %}">Fragenkataloge</a></li><li class="breadcrumb-item active" aria-current="page">{% if object %}{{ object.titel }}{% else %}Neu{% endif %}</li></ol></nav>
+{% endblock %}
+
+{% block content %}
+{% if object %}
+<section class="catalog-hero mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div><p class="text-uppercase small fw-semibold mb-2" style="letter-spacing:.08em;">Fragenkatalog</p><h1 class="h3 mb-2">{{ object.titel }}</h1><p class="mb-0">{{ object.beschreibung|default:"Stellen Sie Fragen zusammen, ordnen Sie sie Themen zu und nutzen Sie sie später für Prüfungen." }}</p></div>
+        <div class="d-flex flex-wrap gap-2 align-items-center"><div class="catalog-stat"><strong>{{ fragen|length }}</strong><span>Fragen</span></div><div class="catalog-stat"><strong>{{ themen|length }}</strong><span>Themen</span></div><a class="btn btn-light fw-semibold" href="{% url 'trainer_question_create' object.pk %}">+ Frage hinzufügen</a><a class="btn btn-outline-light" href="{% url 'trainer_catalog_delete' object.pk %}">Katalog löschen</a></div>
+    </div>
+</section>
+{% else %}
+<div class="mb-4"><h1 class="h3 mb-1">Fragenkatalog erstellen</h1><p class="text-secondary mb-0">Legen Sie zuerst den Katalog an. Anschließend können Sie Fragen importieren oder einzeln erstellen.</p></div>
+{% endif %}
+
+<div class="row g-4">
+    <aside class="col-lg-4"><div class="catalog-sidebar">
+        <div class="aboro-panel mb-4">
+            <div class="catalog-section-title"><span class="catalog-step">1</span><div><h2 class="h5 mb-0">Katalogdaten</h2><small class="text-secondary">Titel und Organisation</small></div></div>
+            <form method="post" novalidate>{% csrf_token %}{% for field in form %}<div class="mb-3"><label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>{% endfor %}<button class="btn btn-aboro w-100" type="submit">{% if object %}Katalogdaten speichern{% else %}Katalog erstellen{% endif %}</button></form>
+        </div>
+        {% if object %}
+        <div class="aboro-panel">
+            <div class="catalog-section-title"><span class="catalog-step">2</span><div><h2 class="h5 mb-0">Fragen importieren</h2><small class="text-secondary">Für viele Fragen auf einmal</small></div></div>
+            <div class="catalog-import"><a class="btn btn-outline-primary w-100" href="{% static 'downloads/fragenkatalog_csv_vorlage.xlsx' %}" download>Excel-Vorlage herunterladen</a><p class="small text-secondary mt-2 mb-3">Die Vorlage enthält Beispiele, Erklärungen zu allen Fragetypen und die Spalte <strong>Thema</strong>.</p><form method="post" action="{% url 'trainer_catalog_csv' object.pk %}" enctype="multipart/form-data">{% csrf_token %}<label class="form-label small fw-semibold" for="{{ csv_form.datei.id_for_label }}">Ausgefüllte CSV-Datei</label>{{ csv_form.datei }}{% for error in csv_form.datei.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}<button class="btn btn-outline-secondary w-100 mt-3" type="submit">CSV importieren</button></form></div>
+            <details class="mt-3"><summary class="small">Import-Hilfe anzeigen</summary><div class="small text-secondary mt-2"><p class="mb-1">Als CSV mit Semikolon (<code>;</code>) aus Excel speichern.</p><p class="mb-1"><code>typ</code> und <code>fragetext</code> sind Pflichtfelder.</p><p class="mb-1"><code>thema</code>: nur den Themennamen eintragen, z. B. <code>Grundlagen</code>. Mehrere Themen mit Komma trennen.</p><p class="mb-0"><strong>Beispiel LAN:</strong> In <code>fragetext</code> steht nur „Wofür steht die Abkürzung LAN?“. <code>[01 Grundlagen]</code> gehört nicht in den Fragetext; in der Spalte <code>thema</code> steht <code>Grundlagen</code>.</p></div></details>
+        </div>
+        {% endif %}
+    </div></aside>
+
+    {% if object %}
+        <section class="col-lg-8">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-6"><input class="form-control" name="q" value="{{ frage_query }}" placeholder="Fragen-ID, Fragetext oder Erklärung suchen"></div>
+            <div class="col-md-4"><select class="form-select" name="aktiv"><option value="alle" {% if fragen_status == "alle" %}selected{% endif %}>Alle Fragen</option><option value="aktiv" {% if fragen_status == "aktiv" %}selected{% endif %}>Nur aktive</option><option value="inaktiv" {% if fragen_status == "inaktiv" %}selected{% endif %}>Nur inaktive</option></select></div>
+            <div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="submit">Suchen</button></div>
+        </form>
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3"><div><h2 class="h4 mb-0">Fragen im Katalog</h2><p class="text-secondary small mb-0">Fragen verwalten und Themenzuordnungen prüfen.</p></div><a class="btn btn-aboro" href="{% url 'trainer_question_create' object.pk %}">+ Frage hinzufügen</a></div>
+        {% for frage in fragen %}
+        <article class="aboro-panel question-card mb-3"><div class="d-flex justify-content-between align-items-start gap-2 mb-3"><div class="question-card__meta"><span class="badge text-bg-secondary">{{ frage.get_typ_display }}</span><span class="badge text-bg-light">{{ frage.get_schwierigkeit_display }}</span><span class="badge text-bg-light">{{ frage.punkte }} Pkt.</span>{% if frage.aktiv %}<span class="badge text-bg-success">Aktiv</span>{% else %}<span class="badge text-bg-warning">Inaktiv</span>{% endif %}{% for tag in frage.tags.all %}<span class="catalog-topic">{{ tag.name }}</span>{% empty %}<span class="small text-secondary">Kein Thema zugeordnet</span>{% endfor %}</div><div class="d-flex align-items-center gap-2"><span class="text-secondary small">#{{ frage.id }}</span><form method="post" action="{% url 'trainer_question_toggle_active' frage.id %}">{% csrf_token %}<input type="hidden" name="q" value="{{ frage_query }}"><input type="hidden" name="aktiv" value="{{ fragen_status }}"><button class="btn btn-sm btn-outline-secondary" type="submit">{% if frage.aktiv %}Deaktivieren{% else %}Aktivieren{% endif %}</button></form></div></div><div class="mb-3 lesson-content">{{ frage.fragetext.html|safe }}</div>
+            {% if frage.typ == "ZO" %}{% if frage.zuordnungen.all %}<table class="table table-sm mb-3"><thead><tr><th>Links</th><th>Rechts</th></tr></thead><tbody>{% for paar in frage.zuordnungen.all %}<tr><td>{{ paar.linkes_element }}</td><td>{{ paar.rechtes_element }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="text-secondary small">Noch keine Zuordnungspaare.</p>{% endif %}<details><summary>Zuordnungspaar hinzufügen</summary><form class="mt-3" method="post" action="{% url 'trainer_answer_create' frage.id %}">{% csrf_token %}{% for field in zuordnung_form %}<div class="mb-2"><label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endfor %}<button class="btn btn-sm btn-outline-secondary" type="submit">Paar speichern</button></form></details>
+            {% elif frage.typ == "FT" or frage.typ == "SZ" %}{% if frage.erklaerung.html %}<div class="text-secondary small lesson-content">{{ frage.erklaerung.html|safe }}</div>{% else %}<p class="text-secondary small mb-0">Freitext – keine Antwortoptionen.</p>{% endif %}
+            {% else %}{% if frage.antworten.all %}<ul class="list-group list-group-flush mb-3">{% for antwort in frage.antworten.all %}<li class="list-group-item px-0 d-flex align-items-center gap-2">{% if antwort.ist_korrekt %}<span class="badge text-bg-success">Richtig</span>{% else %}<span class="badge text-bg-light text-secondary">Falsch</span>{% endif %}{{ antwort.antworttext }}</li>{% endfor %}</ul>{% else %}<p class="text-secondary small">Noch keine Antworten.</p>{% endif %}<details><summary>Antwort hinzufügen</summary><form class="mt-3" method="post" action="{% url 'trainer_answer_create' frage.id %}">{% csrf_token %}{% for field in antwort_form %}<div class="mb-2"><label class="form-label small" for="{{ field.id_for_label }}">{{ field.label }}</label>{% if field.field.widget.input_type == 'checkbox' %}<div class="form-check">{{ field }}</div>{% else %}{{ field }}{% endif %}</div>{% endfor %}<button class="btn btn-sm btn-outline-secondary" type="submit">Antwort speichern</button></form></details>{% endif %}
+        </article>
+        {% empty %}<div class="aboro-panel text-center py-5"><h2 class="h5">Noch keine Fragen vorhanden</h2><p class="text-secondary">Erstellen Sie Ihre erste Frage auf der eigenen Eingabeseite oder importieren Sie eine CSV-Datei.</p><a class="btn btn-aboro" href="{% url 'trainer_question_create' object.pk %}">Erste Frage hinzufügen</a></div>{% endfor %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

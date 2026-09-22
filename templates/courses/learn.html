@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}{{ kurs.titel }} lernen - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% if tenant_org and not single_system_mode %}
+        <li class="breadcrumb-item"><a href="{% url 'org_public_home' tenant_org.slug %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'tenant_course_detail' tenant_org.slug kurs.slug %}">{{ kurs.titel }}</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course_detail' kurs.slug %}">{{ kurs.titel }}</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">Lernen</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h1 class="h4 mb-0">{{ kurs.titel }}</h1>
+        <span class="small text-secondary">{{ einschreibung.fortschritt_prozent }}%</span>
+    </div>
+    <div class="progress" role="progressbar" aria-valuenow="{{ einschreibung.fortschritt_prozent }}" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar aboro-progress" style="width: {{ einschreibung.fortschritt_prozent }}%"></div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <aside class="col-lg-4 col-xl-3">
+        <div class="aboro-panel lesson-sidebar">
+            {% for abschnitt in kurs.abschnitte.all %}
+                <h2 class="h6 mt-3 mb-2">{{ abschnitt.titel }}</h2>
+                <div class="list-group list-group-flush">
+                    {% for item in abschnitt.lektionen.all %}
+                        <a class="list-group-item px-0 d-flex justify-content-between align-items-center {% if lektion.id == item.id %}active-lesson{% endif %}" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_lesson' tenant_org.slug kurs.slug item.id %}{% else %}{% url 'course_lesson' kurs.slug item.id %}{% endif %}">
+                            <span>{{ item.titel }}</span>
+                            {% if item.id in abgeschlossene_ids %}
+                                <span class="badge text-bg-success">OK</span>
+                            {% endif %}
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <section class="col-lg-8 col-xl-9">
+        <article class="aboro-panel">
+            {% if lektion %}
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                    <div>
+                        <p class="text-secondary mb-1">{{ lektion.get_typ_display }}</p>
+                        <h2 class="h4 mb-0">{{ lektion.titel }}</h2>
+                    </div>
+                    <span class="badge text-bg-light">{{ lektion.dauer_minuten }} Min.</span>
+                </div>
+
+                {% if lektion.typ == "VIDEO" %}
+                    {% if lektion.datei %}
+                        <div class="ratio ratio-16x9 mb-3 video-frame">
+                            <video controls preload="metadata"{% if lektion.video_thumbnail %} poster="{{ lektion.video_thumbnail.url }}"{% endif %}>
+                                <source src="{{ lektion.datei.url }}">
+                                Dein Browser kann dieses Video nicht abspielen.
+                            </video>
+                        </div>
+                    {% elif lektion.video_url %}
+                        <div class="ratio ratio-16x9 mb-3 video-frame">
+                            <iframe src="{{ lektion.video_url }}" title="{{ lektion.titel }}" allowfullscreen></iframe>
+                        </div>
+                    {% else %}
+                        <div class="ratio ratio-16x9 mb-3 video-placeholder">
+                            <div>
+                                <strong>Video noch nicht hochgeladen</strong>
+                                <span>Trainer koennen in der Kursverwaltung eine MP4/WebM-Datei oder Video-URL hinterlegen.</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                {% if lektion.typ == "DOKUMENT" and lektion.datei %}
+                    <p><a class="btn btn-outline-secondary" href="{{ lektion.datei.url }}" target="_blank" rel="noopener">Dokument oeffnen</a></p>
+                {% endif %}
+
+                <div class="lesson-content mb-4">{{ lektion.inhalt.html|safe }}</div>
+
+                {% if lektion.materialien.all %}
+                    <section class="lesson-block mb-4">
+                        <h3 class="h5 mb-3">Begleitmaterial</h3>
+                        <div class="list-group">
+                            {% for material in lektion.materialien.all %}
+                                <a class="list-group-item d-flex justify-content-between align-items-center" href="{{ material.datei.url }}" target="_blank" rel="noopener">
+                                    <span>{{ material.titel }}</span>
+                                    <span class="small text-secondary">Download</span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if lektion.uebungsfragen.all %}
+                    <section class="lesson-block mb-4">
+                        <h3 class="h5 mb-2">Lernfortschritt pruefen</h3>
+                        <p class="text-secondary">Diese Uebungsfragen zaehlen nicht zur Zertifikatspruefung.</p>
+                        {% if uebung_ergebnis %}
+                            <div class="alert alert-info">
+                                Ergebnis: {{ uebung_ergebnis.richtig }} von {{ uebung_ergebnis.gesamt }} richtig.
+                            </div>
+                            {% for detail in uebung_ergebnis.details %}
+                                <div class="exercise-result {% if detail.ist_richtig %}exercise-result--ok{% else %}exercise-result--bad{% endif %}">
+                                    <strong>{{ detail.frage }}</strong>
+                                    <span>{% if detail.ist_richtig %}Richtig{% else %}Noch einmal ansehen{% endif %}</span>
+                                    {% if detail.erklaerung %}
+                                        <p>{{ detail.erklaerung }}</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                        <form method="post" action="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_lesson_exercise' tenant_org.slug kurs.slug lektion.id %}{% else %}{% url 'course_lesson_exercise' kurs.slug lektion.id %}{% endif %}">
+                            {% csrf_token %}
+                            {% for frage in lektion.uebungsfragen.all %}
+                                {% if frage.aktiv %}
+                                    <fieldset class="exercise-question">
+                                        <legend>{{ frage.frage }}</legend>
+                                        {% for antwort in frage.antworten.all %}
+                                            <label class="exam-option">
+                                                <input type="checkbox" name="uebungsfrage_{{ frage.id }}" value="{{ antwort.id }}">
+                                                <span>{{ antwort.antwort }}</span>
+                                            </label>
+                                        {% endfor %}
+                                    </fieldset>
+                                {% endif %}
+                            {% endfor %}
+                            <button class="btn btn-outline-secondary" type="submit">Antworten pruefen</button>
+                        </form>
+                    </section>
+                {% endif %}
+
+                <div class="d-flex justify-content-between gap-2 flex-wrap">
+                    {% if vorherige_lektion %}
+                        <a class="btn btn-outline-secondary" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_lesson' tenant_org.slug kurs.slug vorherige_lektion.id %}{% else %}{% url 'course_lesson' kurs.slug vorherige_lektion.id %}{% endif %}">Vorherige Lektion</a>
+                    {% else %}
+                        <span></span>
+                    {% endif %}
+                    <div class="d-flex gap-2">
+                        <form method="post" action="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_lesson_complete' tenant_org.slug kurs.slug lektion.id %}{% else %}{% url 'course_lesson_complete' kurs.slug lektion.id %}{% endif %}">
+                            {% csrf_token %}
+                            <button class="btn btn-aboro" type="submit">Als abgeschlossen markieren</button>
+                        </form>
+                        {% if naechste_lektion %}
+                            <a class="btn btn-outline-secondary" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_lesson' tenant_org.slug kurs.slug naechste_lektion.id %}{% else %}{% url 'course_lesson' kurs.slug naechste_lektion.id %}{% endif %}">Naechste Lektion</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">Dieser Kurs enthaelt noch keine Lektionen.</p>
+            {% endif %}
+        </article>
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Design – {{ org.name }} – ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'single_system_startseite' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{{ org.name }}</a></li>
+        <li class="breadcrumb-item active">Design</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-1 small">{{ org.name }}</p>
+        <h1 class="h3 mb-1">Design anpassen</h1>
+        <p class="text-secondary mb-0">Farben, Logo und CSS gelten für Kurskatalog, Kursseiten und Navigation aller Nutzer dieser Organisation.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-aboro" href="{% url 'single_system_pagebuilder' %}">Sitemaker</a>
+        <a class="btn btn-outline-secondary" href="{% url 'single_system_startseite_editor' %}">Startseite</a>
+        <a class="btn btn-outline-secondary" href="{% url 'single_system_startseite' %}" target="_blank">Vorschau</a>
+        <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Zurück</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <form method="post" enctype="multipart/form-data" id="designForm">
+            {% csrf_token %}
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Farben</h2>
+                <div class="row g-3">
+                    {% for field in form %}
+                        {% if "color" in field.name or "farbe" in field.name %}
+                        <div class="col-sm-6">
+                            <label class="form-label fw-semibold">{{ field.label }}</label>
+                            <div class="d-flex align-items-center gap-2">
+                                {{ field }}
+                                <input type="text" class="form-control color-hex-input"
+                                       data-target="{{ field.auto_id }}"
+                                       value="{{ field.value }}" maxlength="7">
+                            </div>
+                            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+                            {% if field.errors %}<div class="text-danger small mt-1">{{ field.errors }}</div>{% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Logo und Favicon</h2>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.logo.label }}</label>
+                        {% with val=form.logo.value %}{% if val %}
+                            <div class="mb-2">
+                                <img src="/media/{{ val }}" alt="Logo" style="max-height:50px;max-width:180px;object-fit:contain;">
+                            </div>
+                        {% endif %}{% endwith %}
+                        {{ form.logo }}
+                        <div class="form-text">{{ form.logo.help_text }}</div>
+                        {% if form.logo.errors %}<div class="text-danger small mt-1">{{ form.logo.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.favicon.label }}</label>
+                        {{ form.favicon }}
+                        <div class="form-text">{{ form.favicon.help_text }}</div>
+                        {% if form.favicon.errors %}<div class="text-danger small mt-1">{{ form.favicon.errors }}</div>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Eigenes CSS <span class="badge text-bg-warning ms-1">Experten</span></h2>
+                {{ form.custom_css }}
+                {% if form.custom_css.errors %}<div class="text-danger small mt-1">{{ form.custom_css.errors }}</div>{% endif %}
+                <div class="form-text mt-1">{{ form.custom_css.help_text }}</div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-aboro">Design speichern</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="aboro-panel sticky-top" style="top:1rem;">
+            <h2 class="h5 mb-3">Live-Vorschau</h2>
+            <div id="previewBox" style="
+                border-radius:8px; overflow:hidden; border:1px solid rgba(0,0,0,.1);
+                font-family:Helvetica,Arial,sans-serif; font-size:13px;">
+
+                <!-- Navbar Preview -->
+                <div id="prevNavbar" style="background:{{ form.navbar_farbe.value|default:'#0c2448' }};
+                     padding:10px 16px; display:flex; align-items:center; justify-content:space-between;">
+                    <span style="color:#fff;font-weight:700;font-size:15px;">{{ org.name }}</span>
+                    <div style="display:flex;gap:10px;">
+                        <span style="color:rgba(255,255,255,.8);font-size:12px;">Kurse</span>
+                        <span style="color:rgba(255,255,255,.8);font-size:12px;">Dashboard</span>
+                    </div>
+                </div>
+
+                <!-- Content Preview -->
+                <div id="prevBg" style="background:{{ form.hintergrund_farbe.value|default:'#f6f8fb' }};padding:16px;">
+                    <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:{{ form.primary_color.value|default:'#12315f' }};">
+                        Kurskatalog
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        {% for i in "12" %}
+                        <div id="prevCard{{ forloop.counter }}" style="
+                            background:#fff; border-radius:8px; overflow:hidden;
+                            border:1px solid rgba(0,0,0,.1);
+                            box-shadow:0 4px 12px rgba(0,0,0,.06);">
+                            <div style="height:50px;background:{{ form.primary_color.value|default:'#12315f' }};
+                                 display:flex;align-items:center;justify-content:center;
+                                 color:#fff;font-weight:700;font-size:11px;">Vorschau</div>
+                            <div style="padding:8px;">
+                                <div style="font-weight:600;font-size:11px;color:{{ form.primary_color.value|default:'#12315f' }};">Kurs {{ forloop.counter }}</div>
+                                <div style="margin-top:4px;height:4px;border-radius:999px;background:#dce4ef;overflow:hidden;">
+                                    <div style="width:65%;height:100%;background:{{ form.secondary_color.value|default:'#f28c28' }};"></div>
+                                </div>
+                                <div style="margin-top:6px;">
+                                    <span style="
+                                        display:inline-block;padding:3px 8px;border-radius:4px;
+                                        background:{{ form.secondary_color.value|default:'#f28c28' }};
+                                        color:#1b1b1b;font-size:10px;font-weight:600;">Einschreiben</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <p class="text-secondary small mt-2 mb-0">Farben aktualisieren sich sofort. Speichern für Logo und CSS.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    const colorMap = {
+        'id_primary_color':      ['[data-role=primary]', 'prevCard1', 'prevCard2'],
+        'id_secondary_color':    ['[data-role=secondary]'],
+        'id_navbar_farbe':       ['prevNavbar'],
+        'id_hintergrund_farbe':  ['prevBg'],
+    };
+
+    function applyPreview() {
+        const pc = document.getElementById('id_primary_color')?.value || '#12315f';
+        const sc = document.getElementById('id_secondary_color')?.value || '#f28c28';
+        const nc = document.getElementById('id_navbar_farbe')?.value || '#0c2448';
+        const bc = document.getElementById('id_hintergrund_farbe')?.value || '#f6f8fb';
+
+        const navbar = document.getElementById('prevNavbar');
+        if (navbar) navbar.style.background = nc;
+
+        const bg = document.getElementById('prevBg');
+        if (bg) bg.style.background = bc;
+
+        document.querySelectorAll('#prevCard1, #prevCard2').forEach(card => {
+            if (!card) return;
+            // card header
+            card.querySelector('div:first-child').style.background = pc;
+            // title color
+            card.querySelectorAll('div')[1].querySelector('div:first-child').style.color = pc;
+            // progress bar
+            card.querySelector('div[style*="height:4px"] div').style.background = sc;
+            // button
+            card.querySelector('span').style.background = sc;
+        });
+
+        document.querySelectorAll('#prevBg > div:first-child').forEach(h => h.style.color = pc);
+    }
+
+    document.querySelectorAll('.color-hex-input').forEach(hexInput => {
+        const targetId = hexInput.dataset.target;
+        const colorInput = document.getElementById(targetId);
+        if (!colorInput) return;
+
+        colorInput.addEventListener('input', () => {
+            hexInput.value = colorInput.value;
+            applyPreview();
+        });
+        hexInput.addEventListener('input', () => {
+            if (/^#[0-9a-fA-F]{6}$/.test(hexInput.value)) {
+                colorInput.value = hexInput.value;
+                applyPreview();
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

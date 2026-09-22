@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Pruefungsergebnis - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="exam-shell">
+    {% if versuch.bestanden %}
+        <div class="aboro-panel mb-4" style="border-left: 4px solid #198754;">
+            <div class="d-flex align-items-center gap-3">
+                <span style="font-size:2rem; color:#198754;">&#10003;</span>
+                <div>
+                    <p class="fw-bold mb-1" style="color:#198754;">Pruefung bestanden!</p>
+                    <p class="text-secondary mb-0 small">Dein Zertifikat wurde automatisch ausgestellt.</p>
+                </div>
+                {% if versuch.zertifikat %}
+                    <div class="ms-auto d-flex gap-2">
+                        <a class="btn btn-aboro" href="{% url 'cert_download' versuch.zertifikat.code %}">Zertifikat PDF</a>
+                        <a class="btn btn-outline-secondary" href="{% url 'cert_verify' versuch.zertifikat.code %}" target="_blank">Verifizieren</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% elif versuch.status == "AUSSTEHEND" %}
+        <div class="aboro-panel mb-4" style="border-left: 4px solid #ffc107;">
+            <p class="fw-bold mb-1" style="color:#856404;">Freitext-Bewertung ausstehend</p>
+            <p class="text-secondary mb-0 small">Deine Freitextantworten werden noch bewertet. Das Endergebnis folgt danach.</p>
+        </div>
+    {% else %}
+        <div class="aboro-panel mb-4" style="border-left: 4px solid #dc3545;">
+            <p class="fw-bold mb-1" style="color:#dc3545;">Pruefung nicht bestanden</p>
+            <p class="text-secondary mb-0 small">Du kannst die Pruefung erneut ablegen (sofern weitere Versuche erlaubt sind).</p>
+        </div>
+    {% endif %}
+
+    <div class="aboro-panel">
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-2 small">Ergebnis</p>
+        <h1 class="h3 mb-4">{{ versuch.pruefung.titel }}</h1>
+        <dl class="row">
+            <dt class="col-sm-4">Status</dt>
+            <dd class="col-sm-8">{{ versuch.get_status_display }}</dd>
+            <dt class="col-sm-4">Punkte</dt>
+            <dd class="col-sm-8">{{ versuch.punkte_erreicht }} / {{ versuch.punkte_gesamt }}</dd>
+            <dt class="col-sm-4">Prozent</dt>
+            <dd class="col-sm-8">{{ versuch.prozent_erreicht }}%</dd>
+            <dt class="col-sm-4">Bestehensgrenze</dt>
+            <dd class="col-sm-8">{{ versuch.pruefung.bestehensgrenze_prozent }}%</dd>
+            <dt class="col-sm-4">Bestanden</dt>
+            <dd class="col-sm-8">
+                {% if versuch.bestanden %}
+                    <span class="badge text-bg-success">Ja</span>
+                {% else %}
+                    <span class="badge text-bg-danger">Nein</span>
+                {% endif %}
+            </dd>
+        </dl>
+        <div class="mt-3">
+            <a class="btn btn-outline-secondary" href="{% url 'exam_detail' versuch.pruefung.pk %}">Zur Pruefung</a>
+            {% if versuch.bestanden %}
+                <a class="btn btn-outline-secondary ms-2" href="{% url 'cert_list' %}">Alle Zertifikate</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

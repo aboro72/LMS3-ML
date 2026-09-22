@@ -1,0 +1,30 @@
+ABoroLMS Produktions-Checkliste
+================================
+
+Sicherheit:
+  [ ] SECRET_KEY = lange, zufaellige Zeichenkette (mind. 50 Zeichen)
+  [ ] DEBUG = False
+  [ ] ALLOWED_HOSTS = ['deine-domain.de']
+  [ ] Admin-Pfad absichern (IP-Whitelist oder anderer Pfad)
+
+Datenbank:
+  [ ] PostgreSQL konfigurieren (psycopg2-binary installiert)
+  [ ] Migrationen ausfuehren: python manage.py migrate
+
+Medien und Statik:
+  [ ] MEDIA_ROOT auf persistentes Verzeichnis setzen
+  [ ] python manage.py collectstatic
+  [ ] Webserver so konfigurieren, dass /media/ und /static/ direkt ausgeliefert werden
+
+E-Mail:
+  [ ] EMAIL_BACKEND = django.core.mail.backends.smtp.EmailBackend
+  [ ] SMTP-Server, Port, User und Passwort setzen
+
+Zahlungen:
+  [ ] PAYMENT_DEMO_AUTOCONFIRM = False
+  [ ] Stripe API-Keys + Webhook eintragen
+  [ ] PayPal Client-ID + Secret eintragen (optional)
+
+PDF-Export:
+  [ ] GTK3-Runtime installieren (Linux: apt install libpango-1.0-0)
+  [ ] WeasyPrint-Test: python -c 'from weasyprint import HTML'

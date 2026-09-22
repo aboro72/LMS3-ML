@@ -1,0 +1,30 @@
+ABoroLMS – Organisations-Konfiguration Checkliste
+===================================================
+
+E-Mail-Konfiguration:
+  URL: /organisationen/<slug>/email-konfiguration/
+  Felder: absender_name, absender_email, antwort_email
+          smtp_host, smtp_port, smtp_user, smtp_password
+          smtp_use_tls (587) ODER smtp_use_ssl (465)
+  Tipp: Gmail -> App-Passwort verwenden (2FA aktiv)
+
+Organisations-Design:
+  URL: /organisationen/<slug>/design/
+  Felder: primary_color  -> CSS --aboro-blue
+          secondary_color -> CSS --aboro-orange
+          navbar_farbe    -> CSS --aboro-blue-dark
+          hintergrund_farbe -> CSS --aboro-bg
+          logo, favicon, custom_css
+  Gilt fuer: Navbar, Kurskatalog, Kursseiten, Dashboard
+
+Eigene Startseite:
+  URL: /organisationen/<slug>/startseite/ (Editor)
+       /o/<slug>/ (oeffentliche Ansicht)
+  Felder: aktiv, hero_titel, hero_untertitel,
+          hero_bild, hero_button_text, inhalt (WYSIWYG)
+  Automatisch: letzte 6 Kurse werden eingeblendet
+
+Zertifikats-Design:
+  URL: /organisationen/<slug>/zertifikat-design/
+  Felder: primary_color, secondary_color, logo, footer_text,
+          org_display_name, signature_line

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Freitext bewerten - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'examiner_queue' %}">Pruefer-Queue</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Bewertung</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="aboro-panel mb-4">
+            <p class="text-uppercase text-aboro-orange fw-semibold mb-2 small">Freitext-Antwort</p>
+            <h2 class="h5 mb-3">{{ antwort.versuch.pruefung.titel }}</h2>
+            <p class="text-secondary small mb-1">Teilnehmer: <strong>{{ antwort.versuch.nutzer }}</strong> &middot; Versuch #{{ antwort.versuch.versuch_nummer }}</p>
+
+            <hr>
+
+            <div class="mb-4">
+                <p class="fw-semibold mb-2">Frage:</p>
+                <div class="lesson-content">{{ antwort.frage.fragetext.html|safe }}</div>
+            </div>
+
+            <div class="mb-4">
+                <p class="fw-semibold mb-2">Antwort des Teilnehmers:</p>
+                <div class="aboro-panel" style="background:#f6f8fb;">
+                    {{ antwort.freitext_antwort|linebreaks }}
+                </div>
+            </div>
+
+            {% if antwort.frage.erklaerung.html %}
+                <div class="mb-4">
+                    <p class="fw-semibold mb-2">Musterloesung / Erklaerung:</p>
+                    <div class="lesson-content text-secondary">{{ antwort.frage.erklaerung.html|safe }}</div>
+                </div>
+            {% endif %}
+            {% if antwort.frage.bewertungshinweis.html %}
+                <div class="mb-4">
+                    <p class="fw-semibold mb-2">Bewertungsschema (max. {{ antwort.frage.punkte }} Punkte):</p>
+                    <div class="lesson-content text-secondary">{{ antwort.frage.bewertungshinweis.html|safe }}</div>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="aboro-panel">
+            <h2 class="h5 mb-4">Bewertung</h2>
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold" for="{{ form.freitext_punkte.id_for_label }}">
+                        Punkte vergeben <span class="text-secondary fw-normal">(max. {{ antwort.frage.punkte }})</span>
+                    </label>
+                    {{ form.freitext_punkte }}
+                    {% for error in form.freitext_punkte.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold" for="{{ form.freitext_kommentar.id_for_label }}">Kommentar (optional)</label>
+                    {{ form.freitext_kommentar }}
+                    {% for error in form.freitext_kommentar.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-aboro" type="submit">Bewertung speichern</button>
+                    <a class="btn btn-outline-secondary" href="{% url 'examiner_queue' %}">Zurueck zur Queue</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="aboro-panel">
+            <h2 class="h5 mb-3">Bewertungshinweise</h2>
+            <dl class="row small mb-0">
+                <dt class="col-5">Max. Punkte</dt>
+                <dd class="col-7">{{ antwort.frage.punkte }}</dd>
+                <dt class="col-5">Schwierigkeit</dt>
+                <dd class="col-7">{{ antwort.frage.get_schwierigkeit_display }}</dd>
+                <dt class="col-5">Pruefung</dt>
+                <dd class="col-7">{{ antwort.versuch.pruefung.titel }}</dd>
+                <dt class="col-5">Bestehensgrenze</dt>
+                <dd class="col-7">{{ antwort.versuch.pruefung.bestehensgrenze_prozent }}%</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+{% endblock %}

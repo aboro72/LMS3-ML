@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pruefung.titel }} - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="aboro-panel">
+    <p class="text-uppercase text-aboro-orange fw-semibold mb-2">Zertifikatspruefung</p>
+    <h1 class="h3 mb-3">{{ pruefung.titel }}</h1>
+    <p class="text-secondary">{{ pruefung.beschreibung }}</p>
+    <dl class="row">
+        <dt class="col-sm-4">Fragen</dt>
+        <dd class="col-sm-8">{{ pruefung.anzahl_fragen }}</dd>
+        <dt class="col-sm-4">Bestehensgrenze</dt>
+        <dd class="col-sm-8">{{ pruefung.bestehensgrenze_prozent }}%</dd>
+        <dt class="col-sm-4">Zeitlimit</dt>
+        <dd class="col-sm-8">{% if pruefung.zeitlimit_minuten %}{{ pruefung.zeitlimit_minuten }} Minuten{% else %}Kein Limit{% endif %}</dd>
+    </dl>
+    {% if angemeldet %}
+        <form method="post" action="{% url 'exam_start' pruefung.id %}">{% csrf_token %}<button class="btn btn-aboro" type="submit">Prüfung starten</button></form>
+    {% else %}
+        <form method="post" action="{% url 'exam_enroll' pruefung.id %}">{% csrf_token %}<button class="btn btn-aboro" type="submit">Zur Prüfung anmelden</button></form>
+    {% endif %}
+</div>
+{% endblock %}

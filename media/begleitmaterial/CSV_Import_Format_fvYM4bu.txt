@@ -1,0 +1,19 @@
+ABoroLMS CSV-Import Format fuer Fragenkataloge
+================================================
+
+Trennzeichen: Semikolon  |  Kodierung: UTF-8
+
+Pflichtfelder:
+  typ        -> SC | MC | WF | FT | ZO
+  fragetext  -> Fragetext als Klartext
+
+Optionale Felder:
+  punkte       -> Zahl (Standard: 1)
+  schwierigkeit -> L | M | S (Standard: M)
+
+SC/MC/WF: antwort_1..antwort_8, korrekt_1..korrekt_8 (0 oder 1)
+ZO:       links_1..links_5, rechts_1..rechts_5
+
+Beispiel (SC):
+typ;fragetext;antwort_1;korrekt_1;antwort_2;korrekt_2
+SC;Wer betreibt ABoroLMS?;Der Kunde selbst;1;Anthropic;0

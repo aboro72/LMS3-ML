@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<style>
+@page {
+    size: A4 landscape;
+    margin: 0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    width: 297mm;
+    height: 210mm;
+}
+.outer {
+    width: 297mm;
+    height: 210mm;
+    border: 8px solid {{ primary_color }};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.inner {
+    border: 2px solid {{ secondary_color }};
+    width: calc(100% - 20mm);
+    height: calc(100% - 20mm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10mm 15mm;
+    position: relative;
+}
+.logo-img {
+    max-height: 16mm;
+    max-width: 60mm;
+    object-fit: contain;
+    margin-bottom: 4mm;
+}
+.org-name {
+    font-size: 16pt;
+    font-weight: bold;
+    color: {{ primary_color }};
+    letter-spacing: 3pt;
+    text-transform: uppercase;
+    margin-bottom: 6mm;
+}
+.cert-title {
+    font-size: 38pt;
+    font-weight: bold;
+    color: {{ primary_color }};
+    letter-spacing: 4pt;
+    text-transform: uppercase;
+    margin-bottom: 4mm;
+}
+.divider {
+    width: 60mm;
+    height: 2px;
+    background: {{ secondary_color }};
+    margin: 0 auto 6mm;
+}
+.subtitle {
+    font-size: 11pt;
+    color: #6c757d;
+    margin-bottom: 5mm;
+}
+.name {
+    font-size: 26pt;
+    font-weight: bold;
+    color: {{ secondary_color }};
+    margin-bottom: 5mm;
+}
+.exam-label {
+    font-size: 10pt;
+    color: #6c757d;
+    margin-bottom: 2mm;
+}
+.exam-title {
+    font-size: 15pt;
+    font-weight: bold;
+    color: {{ primary_color }};
+    margin-bottom: 4mm;
+}
+.score {
+    font-size: 11pt;
+    color: #333;
+    margin-bottom: 8mm;
+}
+.footer {
+    position: absolute;
+    bottom: 8mm;
+    left: 12mm;
+    right: 12mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+.footer-left {
+    text-align: left;
+}
+.footer-date {
+    font-size: 9pt;
+    color: #6c757d;
+}
+.footer-org {
+    font-size: 10pt;
+    font-weight: bold;
+    color: {{ primary_color }};
+    margin-bottom: 2mm;
+}
+.footer-extra {
+    font-size: 8pt;
+    color: #888;
+    margin-top: 1mm;
+}
+.signature-line {
+    font-size: 9pt;
+    color: #6c757d;
+    border-top: 1px solid #ccc;
+    padding-top: 2mm;
+    min-width: 50mm;
+    margin-top: 4mm;
+    text-align: center;
+}
+.signatures { display: flex; gap: 10mm; margin-top: 3mm; }
+.signature { min-width: 45mm; text-align: center; }
+.signature img { max-width: 42mm; max-height: 15mm; object-fit: contain; display: block; margin: 0 auto 1mm; }
+.footer-right {
+    text-align: center;
+}
+.footer-right img.qr {
+    width: 22mm;
+    height: 22mm;
+    display: block;
+}
+.cert-code {
+    font-size: 6pt;
+    color: #aaa;
+    margin-top: 1mm;
+    font-family: monospace;
+}
+.corner-decoration {
+    position: absolute;
+    width: 12mm;
+    height: 12mm;
+    border-color: {{ secondary_color }};
+    border-style: solid;
+}
+.corner-tl { top: 4mm; left: 4mm; border-width: 2px 0 0 2px; }
+.corner-tr { top: 4mm; right: 4mm; border-width: 2px 2px 0 0; }
+.corner-bl { bottom: 4mm; left: 4mm; border-width: 0 0 2px 2px; }
+.corner-br { bottom: 4mm; right: 4mm; border-width: 0 2px 2px 0; }
+</style>
+</head>
+<body>
+<div class="outer">
+    <div class="inner">
+        <div class="corner-decoration corner-tl"></div>
+        <div class="corner-decoration corner-tr"></div>
+        <div class="corner-decoration corner-bl"></div>
+        <div class="corner-decoration corner-br"></div>
+
+        {% if logo_b64 %}
+        <img class="logo-img" src="{{ logo_b64 }}" alt="Logo">
+        {% endif %}
+        <div class="org-name">{{ org_name }}</div>
+        <div class="cert-title">Zertifikat</div>
+        <div class="divider"></div>
+        <div class="subtitle">Hiermit wird bestätigt, dass</div>
+        <div class="name">{{ zertifikat.get_inhaber_name }}</div>
+        <div class="exam-label">die folgende Prüfung erfolgreich bestanden hat:</div>
+        <div class="exam-title">{{ zertifikat.get_titel }}</div>
+        {% if zertifikat.zertifikatsnummer %}<div class="exam-label">Zertifikatsnummer: {{ zertifikat.zertifikatsnummer }}</div>{% endif %}
+        {% if zertifikat.nutzer.geburtsdatum or zertifikat.nutzer.geburtsort %}<div class="exam-label">Geboren am {{ zertifikat.nutzer.geburtsdatum }}{% if zertifikat.nutzer.geburtsort %} in {{ zertifikat.nutzer.geburtsort }}{% endif %}</div>{% endif %}
+        {% if zertifikat.pruefungsversuch %}
+        <div class="score">Ergebnis: {{ zertifikat.pruefungsversuch.prozent_erreicht }}% &nbsp;|&nbsp; Bestanden</div>
+        {% endif %}
+
+        <div class="footer">
+            <div class="footer-left">
+                <div class="footer-org">{{ org_name }}</div>
+                <div class="footer-date">Ausgestellt am {{ zertifikat.ausgestellt_am|date:"d. F Y" }}</div>
+                {% if footer_text %}
+                <div class="footer-extra">{{ footer_text }}</div>
+                {% endif %}
+                {% if signature_line and not unterschrift_1_b64 and not unterschrift_2_b64 %}
+                <div class="signature-line">{{ signature_line }}</div>
+                {% endif %}
+                {% if unterschrift_1_b64 or unterschrift_2_b64 %}
+                <div class="signatures">
+                    {% if unterschrift_1_b64 %}<div class="signature"><img src="{{ unterschrift_1_b64 }}" alt="Unterschrift 1"><div class="signature-line">{{ signature_line|default:"Unterschrift" }}</div></div>{% endif %}
+                    {% if unterschrift_2_b64 %}<div class="signature"><img src="{{ unterschrift_2_b64 }}" alt="Unterschrift 2"><div class="signature-line">{{ signature_line|default:"Unterschrift" }}</div></div>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="footer-right">
+                <img class="qr" src="data:image/png;base64,{{ qr_b64 }}" alt="QR-Code">
+                <div class="cert-code">{{ zertifikat.code }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if startseite and startseite.hero_titel %}{{ startseite.hero_titel }} – {% endif %}{{ org.name }}{% endblock %}
+
+{% block content %}
+{# Hero-Bereich #}
+<div class="aboro-hero d-flex align-items-center mb-5 rounded-3 overflow-hidden position-relative"
+     style="{% if startseite and startseite.hero_bild %}
+                background:url('{{ startseite.hero_bild.url }}') center/cover no-repeat;
+            {% else %}
+                background:linear-gradient(135deg, var(--aboro-blue) 0%, var(--aboro-blue-dark) 100%);
+            {% endif %}
+            min-height:42vh;">
+    {% if startseite and startseite.hero_bild %}
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,.45);"></div>
+    {% endif %}
+    <div class="container position-relative text-white py-5">
+        <h1 class="display-5 fw-bold mb-3">
+            {% if startseite and startseite.hero_titel %}
+                {{ startseite.hero_titel }}
+            {% else %}
+                Willkommen bei {{ org.name }}
+            {% endif %}
+        </h1>
+        {% if startseite and startseite.hero_untertitel %}
+        <p class="lead mb-4" style="max-width:600px;">{{ startseite.hero_untertitel }}</p>
+        {% endif %}
+        <a class="btn btn-aboro btn-lg"
+           href="{% url 'tenant_course_catalog' org.slug %}">
+            {% if startseite and startseite.hero_button_text %}
+                {{ startseite.hero_button_text }}
+            {% else %}
+                Kurse entdecken
+            {% endif %}
+        </a>
+    </div>
+</div>
+
+{# WYSIWYG-Inhalt #}
+{% if startseite and startseite.inhalt.html %}
+<div class="aboro-panel mb-5">
+    <div class="ql-editor" style="padding:0;">
+        {{ startseite.inhalt.html }}
+    </div>
+</div>
+{% endif %}
+
+{# Kurs-Vorschau #}
+{% if kurse %}
+<div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Unsere Kurse</h2>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'tenant_course_catalog' org.slug %}">Alle anzeigen</a>
+    </div>
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+        {% for kurs in kurse %}
+        <div class="col">
+            <div class="course-card h-100">
+                {% if kurs.thumbnail %}
+                    <img class="course-card__image" src="{{ kurs.thumbnail.url }}" alt="{{ kurs.titel }}">
+                {% else %}
+                    <div class="course-card__placeholder">{{ kurs.titel|slice:":2"|upper }}</div>
+                {% endif %}
+                <div class="course-card__body">
+                    <h3 class="h6 fw-semibold mb-1">
+                        <a href="{% url 'tenant_course_detail' org.slug kurs.slug %}">{{ kurs.titel }}</a>
+                    </h3>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        {% if kurs.ist_kostenlos or kurs.preis == 0 %}
+                            <span class="badge text-bg-success">Kostenlos</span>
+                        {% else %}
+                            <span class="fw-semibold">{{ kurs.preis }} €</span>
+                        {% endif %}
+                        <span class="badge text-bg-light">{{ kurs.get_niveau_display }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{# Kein Inhalt – Platzhalter #}
+{% if not startseite or not startseite.aktiv %}
+<div class="aboro-panel text-center py-5">
+    <h2 class="h5 text-secondary mb-2">Diese Seite wurde noch nicht eingerichtet.</h2>
+    <p class="text-secondary mb-0">
+        {% if user.is_authenticated and ist_org_admin %}
+            <a href="{% url 'single_system_startseite_editor' %}">Startseite jetzt gestalten</a>
+        {% else %}
+            Besuchen Sie den <a href="{% url 'tenant_course_catalog' org.slug %}">Kurskatalog</a>, um die verfügbaren Kurse zu sehen.
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+{% endblock %}

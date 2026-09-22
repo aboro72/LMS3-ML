@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Zertifikat-Design – {{ org.name }} – ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{{ org.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Zertifikat-Design</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-1 small">{{ org.name }}</p>
+        <h1 class="h3 mb-1">Zertifikat-Design anpassen</h1>
+        <p class="text-secondary mb-0">Diese Einstellungen gelten für alle Zertifikate dieser Installation.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Zurück zum Dashboard</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="aboro-panel">
+            <h2 class="h5 mb-4">Design-Einstellungen</h2>
+            <form method="post" enctype="multipart/form-data" id="designForm">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.primary_color.label }}</label>
+                        <div class="d-flex align-items-center gap-2">
+                            {{ form.primary_color }}
+                            <input type="text" class="form-control" id="primaryColorHex"
+                                   value="{{ design.primary_color }}" maxlength="7"
+                                   placeholder="#12315f">
+                        </div>
+                        {% if form.primary_color.errors %}
+                            <div class="text-danger small mt-1">{{ form.primary_color.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Rahmen, Titel und Betreibername</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.secondary_color.label }}</label>
+                        <div class="d-flex align-items-center gap-2">
+                            {{ form.secondary_color }}
+                            <input type="text" class="form-control" id="secondaryColorHex"
+                                   value="{{ design.secondary_color }}" maxlength="7"
+                                   placeholder="#f28c28">
+                        </div>
+                        {% if form.secondary_color.errors %}
+                            <div class="text-danger small mt-1">{{ form.secondary_color.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Name des Inhabers, Divider, Ecken</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.org_display_name.label }}</label>
+                        {{ form.org_display_name }}
+                        {% if form.org_display_name.errors %}
+                            <div class="text-danger small mt-1">{{ form.org_display_name.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Wird oben im Zertifikat statt des Betreibernamens angezeigt.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.footer_text.label }}</label>
+                        {{ form.footer_text }}
+                        {% if form.footer_text.errors %}
+                            <div class="text-danger small mt-1">{{ form.footer_text.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Erscheint in der unteren linken Ecke des Zertifikats.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.signature_line.label }}</label>
+                        {{ form.signature_line }}
+                        {% if form.signature_line.errors %}
+                            <div class="text-danger small mt-1">{{ form.signature_line.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Z.B. „Geschäftsführung" – erscheint unter einer Linie in der Fußzeile.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.unterschrift_1.label }}</label>
+                        {% if design.unterschrift_1 %}<div class="mb-2"><img src="{{ design.unterschrift_1.url }}" alt="Aktuelle Unterschrift 1" style="max-height:55px; max-width:180px; object-fit:contain;"></div>{% endif %}
+                        {{ form.unterschrift_1 }}
+                        {% for error in form.unterschrift_1.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        <div class="form-text">Optional. PNG mit transparentem Hintergrund oder JPG.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.unterschrift_2.label }}</label>
+                        {% if design.unterschrift_2 %}<div class="mb-2"><img src="{{ design.unterschrift_2.url }}" alt="Aktuelle Unterschrift 2" style="max-height:55px; max-width:180px; object-fit:contain;"></div>{% endif %}
+                        {{ form.unterschrift_2 }}
+                        {% for error in form.unterschrift_2.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        <div class="form-text">Optional. Wird neben der ersten Unterschrift platziert.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">{{ form.logo.label }}</label>
+                        {% if design.logo %}
+                            <div class="mb-2">
+                                <img src="{{ design.logo.url }}" alt="Aktuelles Logo" style="max-height:60px; max-width:200px; object-fit:contain;">
+                                <div class="form-text">Aktuelles Logo – neue Datei hochladen, um es zu ersetzen.</div>
+                            </div>
+                        {% endif %}
+                        {{ form.logo }}
+                        {% if form.logo.errors %}
+                            <div class="text-danger small mt-1">{{ form.logo.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">PNG oder JPG empfohlen, transparent wenn möglich. Wird oben im Zertifikat angezeigt.</div>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-aboro">Design speichern</button>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="aboro-panel">
+            <h2 class="h5 mb-3">Vorschau</h2>
+            <p class="text-secondary small mb-3">Vereinfachte Vorschau – das tatsächliche PDF kann leicht abweichen.</p>
+            <div id="certPreview" style="
+                border: 4px solid {{ design.primary_color }};
+                border-radius: 4px;
+                padding: 16px;
+                text-align: center;
+                font-family: Helvetica, Arial, sans-serif;
+                position: relative;
+                background: white;
+            ">
+                <div style="border: 1px solid {{ design.secondary_color }}; padding: 16px; border-radius: 2px;">
+                    <div id="prevOrgName" style="font-size: 10pt; font-weight: bold; color: {{ design.primary_color }}; letter-spacing: 2pt; text-transform: uppercase; margin-bottom: 8px;">
+                        {{ design.org_display_name|default:org.name }}
+                    </div>
+                    <div style="font-size: 20pt; font-weight: bold; color: {{ design.primary_color }}; letter-spacing: 3pt; text-transform: uppercase; margin-bottom: 6px;">
+                        ZERTIFIKAT
+                    </div>
+                    <div id="prevDivider" style="width: 40px; height: 2px; background: {{ design.secondary_color }}; margin: 0 auto 10px;"></div>
+                    <div style="font-size: 8pt; color: #666; margin-bottom: 4px;">Hiermit wird bestätigt, dass</div>
+                    <div id="prevName" style="font-size: 14pt; font-weight: bold; color: {{ design.secondary_color }}; margin-bottom: 6px;">
+                        Max Mustermann
+                    </div>
+                    <div style="font-size: 7pt; color: #666; margin-bottom: 2px;">die folgende Prüfung erfolgreich bestanden hat:</div>
+                    <div id="prevExam" style="font-size: 9pt; font-weight: bold; color: {{ design.primary_color }}; margin-bottom: 6px;">
+                        ABoroLMS Grundlagen Zertifikatspruefung
+                    </div>
+                    <div style="font-size: 8pt; color: #333; margin-bottom: 12px;">Ergebnis: 85% | Bestanden</div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; border-top: 1px solid #eee; padding-top: 8px;">
+                        <div style="text-align: left;">
+                            <div id="prevFooterOrg" style="font-size: 8pt; font-weight: bold; color: {{ design.primary_color }};">{{ design.org_display_name|default:org.name }}</div>
+                            <div style="font-size: 7pt; color: #666;">Ausgestellt am {{ "now"|date:"d. F Y" }}</div>
+                            {% if design.footer_text %}
+                            <div id="prevFooterText" style="font-size: 7pt; color: #888;">{{ design.footer_text }}</div>
+                            {% endif %}
+                            {% if design.signature_line %}
+                            <div id="prevSignature" style="font-size: 7pt; color: #666; border-top: 1px solid #ccc; padding-top: 4px; margin-top: 6px;">{{ design.signature_line }}</div>
+                            {% endif %}
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="width: 40px; height: 40px; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 6pt; color: #999;">QR</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-secondary small mt-3 mb-0">
+                Die Vorschau aktualisiert sich live beim Ändern der Farben.
+                Speichern Sie und laden Sie ein Zertifikat als PDF herunter, um das finale Ergebnis zu sehen.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const primaryInput = document.getElementById('id_primary_color');
+    const secondaryInput = document.getElementById('id_secondary_color');
+    const primaryHex = document.getElementById('primaryColorHex');
+    const secondaryHex = document.getElementById('secondaryColorHex');
+
+    function applyColors(primary, secondary) {
+        const preview = document.getElementById('certPreview');
+        if (!preview) return;
+        preview.style.borderColor = primary;
+        preview.querySelectorAll('[style]').forEach(el => {
+            if (el.style.borderColor && el.style.padding) el.style.borderColor = secondary;
+        });
+        document.querySelectorAll('#prevOrgName, #prevExam, #prevFooterOrg, #prevExam').forEach(el => {
+            if (el) el.style.color = primary;
+        });
+        document.querySelectorAll('#prevName').forEach(el => {
+            if (el) el.style.color = secondary;
+        });
+        const divider = document.getElementById('prevDivider');
+        if (divider) divider.style.background = secondary;
+    }
+
+    if (primaryInput) {
+        primaryInput.addEventListener('input', function () {
+            primaryHex.value = this.value;
+            applyColors(this.value, secondaryInput ? secondaryInput.value : '#f28c28');
+        });
+    }
+    if (primaryHex) {
+        primaryHex.addEventListener('input', function () {
+            if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+                if (primaryInput) primaryInput.value = this.value;
+                applyColors(this.value, secondaryInput ? secondaryInput.value : '#f28c28');
+            }
+        });
+    }
+    if (secondaryInput) {
+        secondaryInput.addEventListener('input', function () {
+            secondaryHex.value = this.value;
+            applyColors(primaryInput ? primaryInput.value : '#12315f', this.value);
+        });
+    }
+    if (secondaryHex) {
+        secondaryHex.addEventListener('input', function () {
+            if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+                if (secondaryInput) secondaryInput.value = this.value;
+                applyColors(primaryInput ? primaryInput.value : '#12315f', this.value);
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}

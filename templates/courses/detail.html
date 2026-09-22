@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ kurs.titel }} - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% if tenant_org and not single_system_mode %}
+        <li class="breadcrumb-item"><a href="{% url 'org_public_home' tenant_org.slug %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'tenant_course_catalog' tenant_org.slug %}">Kurse</a></li>
+        {% else %}
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'course_catalog' %}">Kurse</a></li>
+        {% endif %}
+        <li class="breadcrumb-item active" aria-current="page">{{ kurs.titel }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="aboro-panel mb-4">
+            
+            <h1 class="h2 mb-3">{{ kurs.titel }}</h1>
+            <div class="text-secondary mb-3">{{ kurs.beschreibung.html|safe }}</div>
+            <div class="d-flex gap-2 flex-wrap">
+                <span class="badge text-bg-light">{{ kurs.get_niveau_display }}</span>
+                <span class="badge {% if kurs.ist_zertifikatspruefung %}text-bg-primary{% else %}text-bg-light{% endif %}">{{ kurs.get_angebotstyp_display }}</span>
+                <span class="badge text-bg-light">{{ kurs.sprache }}</span>
+                <span class="badge text-bg-light">{% if kurs.ist_kostenlos %}Kostenlos{% else %}{{ kurs.preis }} EUR{% endif %}</span>
+            </div>
+            {% if kurs.pruefung.pk %}
+                <div class="mt-4 p-3 border rounded">
+                    <h2 class="h5 mb-2">Abschlusspruefung</h2>
+                    <p class="text-secondary mb-3">{{ kurs.pruefung.titel }}</p>
+                    {% if kurs.pruefung.pk %}<a class="btn btn-outline-secondary" href="/pruefungen/{{ kurs.pruefung.pk }}/">Zur Pruefung</a>{% endif %}
+                </div>
+            {% endif %}
+        </div>
+
+        {% if not kurs.ist_zertifikatspruefung %}<div class="aboro-panel">
+            <h2 class="h5 mb-3">Kursinhalt</h2>
+            {% for abschnitt in kurs.abschnitte.all %}
+                <div class="course-section mb-3">
+                    <h3 class="h6 mb-2">{{ abschnitt.titel }}</h3>
+                    <div class="list-group">
+                        {% for lektion in abschnitt.lektionen.all %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>{{ lektion.titel }}</span>
+                                <span class="small text-secondary">{{ lektion.get_typ_display }} · {{ lektion.dauer_minuten }} Min.</span>
+                            </div>
+                        {% empty %}
+                            <div class="list-group-item text-secondary">Noch keine Lektionen.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-secondary mb-0">Noch keine Inhalte veroeffentlicht.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="aboro-panel mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Bewertungen</h2>
+                {% if bewertung_avg %}<span class="course-stars">{{ bewertung_avg|floatformat:1 }} / 5</span>{% endif %}
+            </div>
+            {% if einschreibung %}
+                <form method="post" action="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_review' tenant_org.slug kurs.slug %}{% else %}{% url 'course_review' kurs.slug %}{% endif %}" class="mb-4">
+                    {% csrf_token %}
+                    <div class="row g-2">
+                        <div class="col-sm-3">{{ bewertung_form.sterne }}</div>
+                        <div class="col-sm-7">{{ bewertung_form.kommentar }}</div>
+                        <div class="col-sm-2"><button class="btn btn-aboro w-100" type="submit">Speichern</button></div>
+                    </div>
+                </form>
+            {% endif %}
+            {% for bewertung in bewertungen %}
+                <div class="border-top pt-3 mt-3">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ bewertung.nutzer }}</strong>
+                        <span class="course-stars">{{ bewertung.sterne }} / 5</span>
+                    </div>
+                    {% if bewertung.kommentar %}<p class="text-secondary mb-0">{{ bewertung.kommentar }}</p>{% endif %}
+                </div>
+            {% empty %}
+                <p class="text-secondary mb-0">Noch keine Bewertungen.</p>
+            {% endfor %}
+        </div>
+    </div>
+    <aside class="col-lg-4">
+        <div class="aboro-panel sticky-lg-top course-action-panel">
+            {% if kurs.thumbnail %}
+                <img class="img-fluid rounded mb-3" src="{{ kurs.thumbnail.url }}" alt="{{ kurs.titel }}">
+            {% endif %}
+            {% if user.is_authenticated %}
+                {% if einschreibung %}
+                    {% if kurs.ist_zertifikatspruefung and kurs.pruefung.pk %}<a class="btn btn-aboro w-100" href="/pruefungen/{{ kurs.pruefung.pk }}/">Zur Zertifikatsprüfung</a>{% else %}<a class="btn btn-aboro w-100" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_learn' tenant_org.slug kurs.slug %}{% else %}{% url 'course_learn' kurs.slug %}{% endif %}">Weiterlernen</a>{% endif %}
+                {% elif not kurs.ist_kostenlos and kurs.preis > 0 %}
+                    {% if payment_aktiv %}
+                        <a class="btn btn-aboro w-100" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_checkout' tenant_org.slug kurs.slug %}{% else %}{% url 'course_checkout' kurs.slug %}{% endif %}">{% if kurs.ist_zertifikatspruefung %}Prüfung buchen{% else %}Kurs kaufen{% endif %}</a>
+                    {% else %}
+                    <p class="text-secondary">Der Kauf ist derzeit nicht verfügbar.</p>
+                    {% endif %}
+                    <p class="small text-secondary mt-2 mb-0">Nach Zahlung dauerhaft freigeschaltet.</p>
+                {% else %}
+                    <form method="post" action="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_enroll' tenant_org.slug kurs.slug %}{% else %}{% url 'course_enroll' kurs.slug %}{% endif %}">
+                        {% csrf_token %}
+                        <button class="btn btn-aboro w-100" type="submit">{% if kurs.ist_zertifikatspruefung %}Für Prüfung einschreiben{% else %}Einschreiben{% endif %}</button>
+                    </form>
+                {% endif %}
+            {% else %}
+                {% if kurs.ist_kostenlos or kurs.preis <= 0 %}
+                    <a class="btn btn-aboro w-100" href="{% url 'account_login' %}?next={% if tenant_org and not single_system_mode %}{% url 'tenant_course_learn' tenant_org.slug kurs.slug %}{% else %}{% url 'course_learn' kurs.slug %}{% endif %}">Einloggen und kostenlos starten</a>
+                {% else %}
+                    <a class="btn btn-aboro w-100" href="{% url 'account_login' %}?next={% if tenant_org and not single_system_mode %}{% url 'tenant_course_detail' tenant_org.slug kurs.slug %}{% else %}{% url 'course_detail' kurs.slug %}{% endif %}">Einloggen zum Kaufen</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </aside>
+</div>
+{% endblock %}

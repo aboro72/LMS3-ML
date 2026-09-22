@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Auszahlungen - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-2">Superadmin</p>
+        <h1 class="h3 mb-1">Trainer-Auszahlungen</h1>
+        <p class="text-secondary mb-0">Alle Zahlungen laufen zentral ein. Trainer erhalten 85%, ABoroSoft behaelt 15%.</p>
+    </div>
+</div>
+
+<div class="aboro-panel mb-4">
+    <h2 class="h5 mb-3">Offene Summen je Trainer</h2>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+            <tr>
+                <th>Trainer</th>
+                <th>Brutto</th>
+                <th>15% Gebuehr</th>
+                <th>Auszuzahlen</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in trainer_summen %}
+                <tr>
+                    <td>{{ row.trainer__username|default:"Ohne Trainer" }}<br><span class="small text-secondary">{{ row.trainer__email }}</span></td>
+                    <td>{{ row.brutto }} EUR</td>
+                    <td>{{ row.gebuehr }} EUR</td>
+                    <td><strong>{{ row.auszuzahlen }} EUR</strong></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="text-secondary">Keine offenen Auszahlungen.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="aboro-panel">
+    <h2 class="h5 mb-3">Zahlungen</h2>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+            <tr>
+                <th>Kurs</th>
+                <th>Kaeufer</th>
+                <th>Trainer</th>
+                <th>Zahlung</th>
+                <th>Trainer-Anteil</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for zahlung in zahlungen %}
+                <tr>
+                    <td>{{ zahlung.kurs.titel }}</td>
+                    <td>{{ zahlung.nutzer.username }}</td>
+                    <td>{{ zahlung.trainer.username|default:"-" }}</td>
+                    <td>{{ zahlung.betrag_brutto }} EUR<br><span class="small text-secondary">{{ zahlung.get_zahlungsart_display }}</span></td>
+                    <td>{{ zahlung.trainer_anteil }} EUR</td>
+                    <td>{{ zahlung.get_auszahlungsstatus_display }}</td>
+                    <td class="text-end">
+                        {% if zahlung.zahlungsart == "bank_transfer" and zahlung.status == "offen" %}
+                            <form method="post" action="{% url 'bank_transfer_confirm' zahlung.zahlung_id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Ueberweisung bestaetigen</button>
+                            </form>
+                        {% elif zahlung.auszahlungsstatus == "offen" %}
+                            <form method="post" action="{% url 'payout_mark_notified' zahlung.zahlung_id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Betreiber informiert</button>
+                            </form>
+                        {% elif zahlung.auszahlungsstatus == "gemeldet" %}
+                            <form method="post" action="{% url 'payout_mark_paid' zahlung.zahlung_id %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-aboro" type="submit">Als ausgezahlt markieren</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7" class="text-secondary">Keine Zahlungen.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

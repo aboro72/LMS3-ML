@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Zahlungseinstellungen{% endblock %}
+{% block content %}
+<div class="aboro-panel mx-auto" style="max-width: 720px">
+    <h1 class="h3">Zahlungseinstellungen</h1>
+    <p>Aktiviere oder pausiere neue Kurskäufe. Bestehende Kurszugänge und Rechnungen bleiben verfügbar. Bereits eingegangene Überweisungen können weiterhin bestätigt werden.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <p class="text-secondary">Nach der Aktivierung stehen die konfigurierten Zahlungsarten bereit. Online-Zahlungsanbieter sind erst nach abgeschlossener Integration verfügbar. Bankdaten und Zahlungsarten verwaltest du im Django-Admin.</p>
+        <button type="submit" class="btn btn-aboro">Speichern</button>
+    </form>
+</div>
+{% endblock %}

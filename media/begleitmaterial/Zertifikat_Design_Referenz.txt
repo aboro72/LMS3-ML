@@ -1,0 +1,21 @@
+ABoroLMS – Zertifikats-Design Referenz
+========================================
+
+Modell: certificates.ZertifikatDesign
+Beziehung: OneToOneField -> organisations.Organisation
+
+Felder:
+  primary_color    -> Hauptfarbe (Standard: #12315f)
+  secondary_color  -> Akzentfarbe (Standard: #f28c28)
+  org_display_name -> Anzeigename (leer = Organisationsname)
+  footer_text      -> Fusszeilen-Zusatztext
+  signature_line   -> Unterschriftenzeile
+  logo             -> ImageField -> upload_to='zertifikat_logos/'
+
+Design-URL fuer Org-Admin:
+  /organisationen/<slug>/zertifikat-design/
+
+PDF-Service (services.py):
+  design, _ = ZertifikatDesign.objects.get_or_create(organisation=org)
+  Farben werden als Template-Variablen in das PDF-Template uebergeben.
+  Logo wird als Base64-Daten-URL eingebettet (kein externer Datei-Zugriff noetig).

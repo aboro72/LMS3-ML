@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Fragenkataloge - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Fragenkataloge</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Fragenkataloge</h1>
+        <p class="text-secondary mb-0">Fragen verwalten und Pruefungen zusammenstellen.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'trainer_exam_list' %}">Pruefungen</a>
+        <a class="btn btn-aboro" href="{% url 'trainer_catalog_create' %}">Katalog erstellen</a>
+    </div>
+</div>
+
+<div class="aboro-panel">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-8"><label class="visually-hidden" for="catalogSearch">Katalog suchen</label><input id="catalogSearch" class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Katalog suchen"></div>
+        <div class="col-md-4"><button class="btn btn-outline-secondary w-100" type="submit">Suchen</button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead>
+            <tr>
+                <th>Titel</th>
+                {% if not single_system_mode %}<th>Organisation</th>{% endif %}
+                <th>Erstellt von</th>
+                <th class="text-end">Aktionen</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for katalog in kataloge %}
+                <tr>
+                    <td class="fw-semibold">{{ katalog.titel }}</td>
+                    {% if not single_system_mode %}<td>{{ katalog.organisation.name }}</td>{% endif %}
+                    <td>{{ katalog.erstellt_von|default:"-" }}</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_catalog_edit' katalog.pk %}">Bearbeiten</a>
+                        <a class="btn btn-sm btn-outline-danger" href="{% url 'trainer_catalog_delete' katalog.pk %}">Löschen</a>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-secondary py-3">Noch keine Fragenkataloge. <a href="{% url 'trainer_catalog_create' %}">Ersten Katalog erstellen</a>.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

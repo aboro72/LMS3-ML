@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Kurse - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        {% if tenant_org and not single_system_mode %}<li class="breadcrumb-item"><a href="{% url 'org_public_home' tenant_org.slug %}">Start</a></li>{% else %}<li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>{% endif %}
+        <li class="breadcrumb-item active" aria-current="page">Kurse</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Kurs-Katalog</h1>
+        <p class="text-secondary mb-0">{% if tenant_org and not single_system_mode %}Verfuegbare Kurse von {{ tenant_org.name }}.{% else %}Verfuegbare Kurse deiner ABoroLMS-Installation.{% endif %}</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <aside class="col-lg-3">
+        <form class="aboro-panel" method="get">
+            <label class="form-label" for="q">Suche</label>
+            <input class="form-control mb-3" id="q" name="q" value="{{ filter.q }}" placeholder="Titel oder Inhalt">
+
+            <label class="form-label" for="niveau">Niveau</label>
+            <select class="form-select mb-3" id="niveau" name="niveau">
+                <option value="">Alle</option>
+                {% for value, label in niveau_choices %}
+                    <option value="{{ value }}" {% if filter.niveau == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+            <label class="form-label" for="sprache">Sprache</label>
+            <input class="form-control mb-3" id="sprache" name="sprache" value="{{ filter.sprache }}" placeholder="de">
+
+            <label class="form-label" for="preis">Preis</label>
+            <select class="form-select mb-3" id="preis" name="preis">
+                <option value="">Alle</option>
+                <option value="kostenlos" {% if filter.preis == "kostenlos" %}selected{% endif %}>Kostenlos</option>
+                <option value="bezahlt" {% if filter.preis == "bezahlt" %}selected{% endif %}>Bezahlt</option>
+            </select>
+
+            <label class="form-label" for="kategorie">Thema / Unterthema</label>
+            <select class="form-select mb-3" id="kategorie" name="kategorie">
+                <option value="">Alle Themen</option>
+                {% for thema in kategorie_choices %}
+                    <option value="{{ thema.id }}" {% if filter.kategorie == thema.id|stringformat:'s' %}selected{% endif %}>{{ thema }}</option>
+                {% endfor %}
+            </select>
+
+            <button class="btn btn-aboro w-100" type="submit">Filtern</button>
+        </form>
+    </aside>
+
+    <section class="col-lg-9">
+        <div class="row g-3">
+            {% for kurs in kurse %}
+                <div class="col-md-6 col-xl-4">
+                    <article class="course-card h-100">
+                        {% if kurs.thumbnail %}
+                            <img class="course-card__image" src="{{ kurs.thumbnail.url }}" alt="{{ kurs.titel }}">
+                        {% else %}
+                            <div class="course-card__placeholder">ABoroLMS</div>
+                        {% endif %}
+                        <div class="course-card__body">
+                            
+                            {% if kurs.kategorie %}<div class="small text-aboro-orange mb-1">{{ kurs.kategorie }}</div>{% endif %}
+                            <h2 class="h6 mb-2">{% if tenant_org and not single_system_mode %}<a href="{% url 'tenant_course_detail' tenant_org.slug kurs.slug %}">{{ kurs.titel }}</a>{% else %}<a href="{% url 'course_detail' kurs.slug %}">{{ kurs.titel }}</a>{% endif %}</h2>
+                            {% if kurs.ist_zertifikatspruefung %}<div class="small text-primary fw-semibold mb-2">Zertifikatsprüfung</div>{% endif %}
+                            <div class="course-stars mb-2" aria-label="Bewertung">★★★★★</div>
+                            <div class="d-flex justify-content-between small text-secondary">
+                                <span>{{ kurs.get_niveau_display }}</span>
+                                <span>{{ kurs.dauer_minuten }} Min.</span>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="aboro-panel">
+                        <p class="text-secondary mb-0">Keine Kurse gefunden.</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

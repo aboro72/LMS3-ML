@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}E-Mail-Konfiguration – {{ org.name }} – ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Start</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">{{ org.name }}</a></li>
+        <li class="breadcrumb-item active">E-Mail-Konfiguration</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-1 small">{{ org.name }}</p>
+        <h1 class="h3 mb-1">E-Mail-Konfiguration</h1>
+        <p class="text-secondary mb-0">Eingehende E-Mails (Anmeldedaten, Kaufbestätigungen, Rechnungen) im Namen Ihrer Organisation versenden.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Zurück</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Aktivierung</h2>
+                <div class="form-check form-switch">
+                    {{ form.aktiv }}
+                    <label class="form-check-label fw-semibold" for="{{ form.aktiv.id_for_label }}">
+                        {{ form.aktiv.label }}
+                    </label>
+                    {% if form.aktiv.errors %}
+                        <div class="text-danger small">{{ form.aktiv.errors }}</div>
+                    {% endif %}
+                    <div class="form-text">{{ form.aktiv.help_text }}</div>
+                </div>
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">Absender-Adressen</h2>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.absender_name.label }}</label>
+                        {{ form.absender_name }}
+                        {% if form.absender_name.errors %}<div class="text-danger small mt-1">{{ form.absender_name.errors }}</div>{% endif %}
+                        <div class="form-text">Anzeigename im E-Mail-Client des Empfängers</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.absender_email.label }}</label>
+                        {{ form.absender_email }}
+                        {% if form.absender_email.errors %}<div class="text-danger small mt-1">{{ form.absender_email.errors }}</div>{% endif %}
+                        <div class="form-text">Von dieser Adresse werden Mails versendet</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.antwort_email.label }}</label>
+                        {{ form.antwort_email }}
+                        {% if form.antwort_email.errors %}<div class="text-danger small mt-1">{{ form.antwort_email.errors }}</div>{% endif %}
+                        <div class="form-text">{{ form.antwort_email.help_text }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-3">SMTP-Server</h2>
+                <div class="row g-3">
+                    <div class="col-sm-8">
+                        <label class="form-label fw-semibold">{{ form.smtp_host.label }}</label>
+                        {{ form.smtp_host }}
+                        {% if form.smtp_host.errors %}<div class="text-danger small mt-1">{{ form.smtp_host.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="form-label fw-semibold">{{ form.smtp_port.label }}</label>
+                        {{ form.smtp_port }}
+                        {% if form.smtp_port.errors %}<div class="text-danger small mt-1">{{ form.smtp_port.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.smtp_user.label }}</label>
+                        {{ form.smtp_user }}
+                        {% if form.smtp_user.errors %}<div class="text-danger small mt-1">{{ form.smtp_user.errors }}</div>{% endif %}
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold">{{ form.smtp_password.label }}</label>
+                        {{ form.smtp_password }}
+                        {% if form.smtp_password.errors %}<div class="text-danger small mt-1">{{ form.smtp_password.errors }}</div>{% endif %}
+                        <div class="form-text">{{ form.smtp_password.help_text }}</div>
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex gap-4 flex-wrap">
+                            <div class="form-check">
+                                {{ form.smtp_use_tls }}
+                                <label class="form-check-label" for="{{ form.smtp_use_tls.id_for_label }}">
+                                    {{ form.smtp_use_tls.label }}
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.smtp_use_ssl }}
+                                <label class="form-check-label" for="{{ form.smtp_use_ssl.id_for_label }}">
+                                    {{ form.smtp_use_ssl.label }}
+                                </label>
+                            </div>
+                        </div>
+                        {% if form.smtp_use_tls.errors or form.smtp_use_ssl.errors %}
+                            <div class="text-danger small mt-1">{{ form.smtp_use_tls.errors }}{{ form.smtp_use_ssl.errors }}</div>
+                        {% endif %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mt-2 py-2">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="aboro-panel mb-4">
+                <h2 class="h5 mb-2">Individuelle E-Mail-Texte</h2>
+                <p class="text-secondary small">Platzhalter: <code>&#123;&#123; organisation &#125;&#125;</code>, <code>&#123;&#123; einladungslink &#125;&#125;</code> und <code>&#123;&#123; passwort_reset_link &#125;&#125;</code>. Die Beispieltexte können vollständig angepasst werden.</p>
+                <div class="mb-3"><label class="form-label fw-semibold">{{ form.einladung_betreff.label }}</label>{{ form.einladung_betreff }}</div>
+                <div class="mb-4"><label class="form-label fw-semibold">{{ form.einladung_text.label }}</label>{{ form.einladung_text }}</div>
+                <div class="mb-3"><label class="form-label fw-semibold">{{ form.passwort_reset_betreff.label }}</label>{{ form.passwort_reset_betreff }}</div>
+                <div><label class="form-label fw-semibold">{{ form.passwort_reset_text.label }}</label>{{ form.passwort_reset_text }}</div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-aboro">Einstellungen speichern</button>
+                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="aboro-panel">
+            <h2 class="h5 mb-3">Anbieter-Schnellinfo</h2>
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Anbieter</th><th>Host</th><th>Port</th><th>Methode</th></tr></thead>
+                <tbody>
+                    <tr><td>Gmail</td><td>smtp.gmail.com</td><td>587</td><td>TLS</td></tr>
+                    <tr><td>Gmail</td><td>smtp.gmail.com</td><td>465</td><td>SSL</td></tr>
+                    <tr><td>Outlook</td><td>smtp-mail.outlook.com</td><td>587</td><td>TLS</td></tr>
+                    <tr><td>Office 365</td><td>smtp.office365.com</td><td>587</td><td>TLS</td></tr>
+                    <tr><td>Strato</td><td>smtp.strato.de</td><td>465</td><td>SSL</td></tr>
+                    <tr><td>1&1 IONOS</td><td>smtp.ionos.de</td><td>587</td><td>TLS</td></tr>
+                </tbody>
+            </table>
+            <hr>
+            <p class="text-secondary small mb-0">
+                <strong>Gmail-Tipp:</strong> Verwenden Sie ein
+                <a href="https://support.google.com/accounts/answer/185833" target="_blank" rel="noopener">App-Passwort</a>,
+                kein normales Konto-Passwort, wenn 2-Faktor-Authentifizierung aktiv ist.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

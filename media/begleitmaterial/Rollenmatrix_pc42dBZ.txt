@@ -1,0 +1,16 @@
+ABoroLMS Rollenmatrix
+=====================
+
+Funktion                         SA  OA  TR  EX  LE
+-------------------------------- --- --- --- --- ---
+Alle Orgs verwalten              X
+Eigene Org-Einstellungen         X   X
+Mitglieder einladen              X   X
+Kurse erstellen/bearbeiten       X   X   X
+Fragenkatalog/Pruefung anlegen   X   X   X
+Freitext-Antworten bewerten      X   X   X   X
+An Kursen teilnehmen             X   X   X   X   X
+Pruefung ablegen                 X   X   X   X   X
+Zertifikat herunterladen         X   X   X   X   X
+
+SA=Super-Admin  OA=Org-Admin  TR=Trainer  EX=Pruefer  LE=Lernender

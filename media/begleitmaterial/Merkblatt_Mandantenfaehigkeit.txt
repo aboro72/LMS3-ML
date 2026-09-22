@@ -1,0 +1,1 @@
+Merksatz: Eine Selfhosting-Installation kann mehrere Organisationen bedienen. QuerySets und Profile sorgen fuer Datenisolation.

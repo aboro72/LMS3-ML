@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Zahlungsstatus - ABoroLMS{% endblock %}
+
+{% block content %}
+<div class="aboro-panel">
+    <p class="text-uppercase text-aboro-orange fw-semibold mb-2">Zahlung</p>
+    <h1 class="h3 mb-3">{{ zahlung.kurs.titel }}</h1>
+    <dl class="row">
+        <dt class="col-sm-4">Status</dt>
+        <dd class="col-sm-8">{{ zahlung.get_status_display }}</dd>
+        <dt class="col-sm-4">Zahlungsart</dt>
+        <dd class="col-sm-8">{{ zahlung.get_zahlungsart_display }}</dd>
+        <dt class="col-sm-4">Betrag</dt>
+        <dd class="col-sm-8">{{ zahlung.betrag_brutto }} {{ zahlung.waehrung }}</dd>
+    </dl>
+    {% if zahlung.status == "bezahlt" %}
+        <a class="btn btn-aboro" href="{% url 'course_learn' zahlung.kurs.slug %}">Zum Kurs</a>
+        {% if zahlung.rechnung %}<a class="btn btn-outline-secondary ms-2" href="{% url 'invoice_detail' zahlung.rechnung.rechnungsnummer %}">Beleg anzeigen</a>{% endif %}
+    {% elif zahlung.zahlungsart == "bank_transfer" %}
+        <div class="alert alert-warning">
+            Bitte überweise den Betrag an das Konto der Kursorganisation. Die Organisation bestätigt den Zahlungseingang manuell.
+        </div>
+        <a class="btn btn-outline-secondary" href="{% url 'course_detail' zahlung.kurs.slug %}">Zum Kurs</a>
+    {% else %}
+        <a class="btn btn-outline-secondary" href="{% url 'course_checkout' zahlung.kurs.slug %}">Erneut versuchen</a>
+    {% endif %}
+</div>
+{% endblock %}

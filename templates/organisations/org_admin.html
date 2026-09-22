@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}{{ org.name }} - OrgAdmin - ABoroLMS{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'single_system_startseite' %}">Start</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ org.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+        <p class="text-uppercase text-aboro-orange fw-semibold mb-1 small">Organisation</p>
+        <h1 class="h3 mb-1">{{ org.name }}</h1>
+        <span class="badge text-bg-light">{{ org.get_lizenz_typ_display }}</span>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-secondary" href="{% url 'system_members' %}">Mitglieder</a>
+        <a class="btn btn-outline-secondary" href="{% url 'system_design' %}">Design</a>
+        <a class="btn btn-outline-secondary" href="{% url 'single_system_startseite' %}">Startseite</a>
+        <a class="btn btn-outline-secondary" href="{% url 'single_system_startseite_editor' %}">Startseite bearbeiten</a>
+        <a class="btn btn-outline-secondary" href="{% url 'system_email' %}">E-Mail</a>
+        <a class="btn btn-outline-secondary" href="{% url 'org_payment_settings' org.slug %}">Zahlungen</a>
+        <a class="btn btn-outline-secondary" href="{% url 'system_cert_design' %}">Zertifikat</a>
+        <a class="btn btn-aboro" href="{% url 'trainer_course_list' %}">Kursverwaltung</a>
+    </div>
+</div>
+
+{# KPI-Karten #}
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="aboro-panel text-center">
+            <div class="h2 text-aboro-orange mb-1">{{ nutzer_count }}</div>
+            <div class="text-secondary small">
+                Mitglieder
+                {% if org.max_nutzer %}/ {{ org.max_nutzer }} Limit{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="aboro-panel text-center">
+            <div class="h2 text-aboro-orange mb-1">{{ kurs_count }}</div>
+            <div class="text-secondary small">
+                Kurse
+                {% if org.max_kurse %}/ {{ org.max_kurse }} Limit{% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="aboro-panel text-center">
+            <div class="h2 text-aboro-orange mb-1">{{ einschreibungen_count }}</div>
+            <div class="text-secondary small">Bezahlte Einschreibungen</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="aboro-panel text-center">
+            <div class="h2 text-aboro-orange mb-1">{{ umsatz|floatformat:2 }} EUR</div>
+            <div class="text-secondary small">Gesamtumsatz</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    {# Top Kurse #}
+    <div class="col-lg-8">
+        <div class="aboro-panel">
+            <h2 class="h5 mb-3">Top Kurse nach Einschreibungen</h2>
+            {% if top_kurse %}
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Kurs</th>
+                        <th>Status</th>
+                        <th class="text-end">Einschreibungen</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for kurs in top_kurse %}
+                        <tr>
+                            <td class="fw-semibold">{{ kurs.titel }}</td>
+                            <td>
+                                {% if kurs.ist_veroeffentlicht %}
+                                    <span class="badge text-bg-success">Aktiv</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">Entwurf</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ kurs.anmeldungen }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-secondary mb-0">Noch keine veroeffentlichten Kurse.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Lizenz & Trainer-Anteil #}
+    <div class="col-lg-4">
+        <div class="aboro-panel mb-3">
+            <h2 class="h5 mb-3">Lizenz</h2>
+            <dl class="row mb-0">
+                <dt class="col-7">Typ</dt>
+                <dd class="col-5">{{ org.get_lizenz_typ_display }}</dd>
+                <dt class="col-7">Max. Nutzer</dt>
+                <dd class="col-5">{% if org.max_nutzer %}{{ org.max_nutzer }}{% else %}unbegrenzt{% endif %}</dd>
+                <dt class="col-7">Max. Kurse</dt>
+                <dd class="col-5">{% if org.max_kurse %}{{ org.max_kurse }}{% else %}unbegrenzt{% endif %}</dd>
+            </dl>
+        </div>
+        <div class="aboro-panel">
+            <h2 class="h5 mb-3">Auszahlung Trainer</h2>
+            <dl class="row mb-0">
+                <dt class="col-7">Trainer-Anteil (85%)</dt>
+                <dd class="col-5">{{ trainer_anteil|floatformat:2 }} EUR</dd>
+                <dt class="col-7">Plattform (15%)</dt>
+                <dd class="col-5">{{ plattform_anteil|floatformat:2 }} EUR</dd>
+            </dl>
+            {% if user.is_superuser %}
+                <a class="btn btn-sm btn-outline-secondary mt-3" href="{% url 'superadmin_payouts' %}">Auszahlungen verwalten</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
