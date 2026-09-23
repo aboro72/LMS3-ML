@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ABoroLMS Installation</title>
+    <style>
+        body { margin: 0; background: #f4f6f8; color: #20252b; font: 16px system-ui, sans-serif; }
+        main { max-width: 760px; margin: 40px auto; padding: 0 20px; }
+        .card { background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 8px 30px #00000012; }
+        h1 { margin-top: 0; color: #0c437b; }
+        h2 { margin-top: 28px; font-size: 1.1rem; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+        label { display: block; font-weight: 600; margin-top: 14px; }
+        input { box-sizing: border-box; width: 100%; margin-top: 6px; padding: 10px; border: 1px solid #bbc3cc; border-radius: 6px; font: inherit; }
+        small { color: #59636e; font-weight: normal; }
+        button { margin-top: 24px; padding: 11px 18px; background: #0c437b; color: white; border: 0; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        .error { color: #a32121; background: #fff0f0; padding: 10px; border-radius: 6px; }
+    </style>
+</head>
+<body><main><div class="card">
+    <h1>ABoroLMS installieren</h1>
+    <p>Der Assistent richtet eine einzelne ML-Prüfungsinstallation ein. PostgreSQL und Redis müssen durch den Bootstrap bereits erreichbar sein.</p>
+    {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <h2>System</h2>
+        {% for field in form %}
+            {% if field.name == "admin_username" %}<h2>Administrator</h2>{% endif %}
+            {% if field.name == "email_host" %}<h2>E-Mail (optional)</h2>{% endif %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.help_text %}<br><small>{{ field.help_text }}</small>{% endif %}</label>
+            {{ field }}{% if field.errors %}<div class="error">{{ field.errors }}</div>{% endif %}
+        {% endfor %}
+        <button type="submit">Installation starten</button>
+    </form>
+</div></main></body></html>
