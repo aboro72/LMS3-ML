@@ -1,5 +1,18 @@
 # Fehlerbericht ABoroLMS
 
+## Aktualer Gesamtstand – 23.09.2026
+
+Die historische Mandanten-Isolationskorrektur ist abgeschlossen. Die aktuelle
+lokale Validierung ergibt `manage.py check` ohne Fehler, keine offenen Migrationen
+und **47 erfolgreiche Tests**. Zusätzlich wurden Produktionsinstallation,
+PostgreSQL/Gunicorn/Nginx/Redis/Celery, Staticfiles, PageBuilder und das technische
+Superadmin-Dashboard ergänzt.
+
+Für die Produktivfreigabe verbleiben: Serverbereitstellung der letzten Änderungen,
+Backup/Restore, Datenmigrationsprobe, Browser-/PDF-Regression, Upload-/Virenscan-
+Konzept, Datenschutzphase 2 und rechtliche Prüfung. Zahlungen bleiben im
+ML-Einzelsystem deaktiviert.
+
 Nachtrag 2026-09-10: Lokale Produktionspruefungen und Payment-Deaktivierung sind in
 [PRODUKTIONSPRUEFUNG.md](PRODUKTIONSPRUEFUNG.md) dokumentiert. Payment ist lokal
 ausgeschaltet und ueber die Superadmin-Zahlungseinstellungen wieder aktivierbar.

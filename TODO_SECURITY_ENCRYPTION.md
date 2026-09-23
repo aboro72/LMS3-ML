@@ -2,9 +2,16 @@
 
 Stand: 2026-06-29
 
+## Aktualisierung 2026-09-23
+
+- Aktuelle Gesamtvalidierung: `manage.py check` OK, keine offenen Migrationen, **47 Tests OK**.
+- ML-Einzelsystem: Zahlungen deaktiviert; historische Zahlungsdaten bleiben geschützt und lesbar.
+- Noch offen bleiben Rechnungs-/Adress-Hybridmodell, Hash-Lookups, Datenexport, Löschung/Anonymisierung, Backup-/Restore-Prüfung und Key-Rotation.
+- Zusätzlich offen: MIME-/Virenscan für Uploads, Videoverarbeitung und rechtliche Datenschutzprüfung.
+
 ## Zuletzt erledigt
 
-- 2026-06-29 12:36 - Finale Validierung abgeschlossen: `check` OK, keine offenen Migrationen, 37 Tests OK.
+- 2026-06-29 12:36 - Historische Validierung abgeschlossen: `check` OK, keine offenen Migrationen, 37 Tests OK. Die aktuelle Gesamtprüfung vom 23.09.2026 umfasst 47 Tests.
 
 ## Ziel
 
@@ -58,7 +65,7 @@ Sensible Daten sollen schrittweise besser geschuetzt werden. Fokus: Namen, Adres
 
 - [x] `python manage.py check` ausfuehren. Ergebnis: OK.
 - [x] `python manage.py makemigrations --check --dry-run` ausfuehren. Ergebnis: No changes detected.
-- [x] `python manage.py test` ausfuehren. Ergebnis: 37 Tests OK.
+- [x] `python manage.py test` ausführen. Letzte Gesamtprüfung: 47 Tests OK.
 - [x] Ergebnis in dieser Datei dokumentieren.
 
 ## Notizen

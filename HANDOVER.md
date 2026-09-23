@@ -1,6 +1,16 @@
 # ABoroLMS Handover
 
-Stand: 2026-06-26
+Stand: 2026-09-23
+
+## Verbindlicher aktueller Stand
+
+- Django **6.1.1**, Python 3.12–3.14; lokale Umgebung Python 3.14.
+- PostgreSQL ist die Produktionsreferenz; Linux nutzt Gunicorn, Nginx/ISPConfig, Redis und Celery.
+- ML Gruppe wird als Einzelsystem betrieben. Zahlungen sind für diesen Betrieb deaktiviert; historische Daten bleiben erhalten.
+- Superadmin-Dashboard: technische Informationen, Auslastung, Benutzerverwaltung und direkter Django-Admin-Link.
+- Startseite: zentraler Editor und visueller Drag-and-drop-PageBuilder vorhanden; produktive Serverabnahme offen.
+- Letzte lokale Validierung: `check` OK, keine offenen Migrationen, **47 Tests OK**.
+- Priorität vor Produktivfreigabe: Deployment der letzten Änderungen, Browser-/PDF-Abnahme, Backup/Restore und Datenmigrationsprobe.
 
 ## Kurzbeschreibung
 
@@ -8,13 +18,13 @@ ABoroLMS ist aktuell ein Selfhosting-orientiertes Django-LMS mit klassischem Ser
 
 ## Technischer Stand
 
-- Backend: Django 5.2.x, Python 3.11 in der aktuellen lokalen Umgebung.
+- Backend: Django 6.1.1, Python 3.14 lokal; Python 3.12–3.14 werden unterstützt.
 - Frontend: Django Templates, Bootstrap 5, Vanilla JS, SortableJS fuer Kursstruktur.
 - Settings: `config.settings.development` fuer lokale Entwicklung, `config.settings.production` vorbereitet.
 - Datenbank lokal: SQLite `db.sqlite3`.
 - Rich Text: `django-quill-editor`.
 - Datei-Uploads: lokal ueber `MEDIA_ROOT`; S3-Storage ist in Production-Settings vorbereitet.
-- Selfhosting-Ziel: spaeter Installationsskripte fuer Linux Apache2, Linux Nginx und optional Windows IIS.
+- Selfhosting: Linux-Installer für PostgreSQL/Nginx/Gunicorn/Redis/Celery sowie Windows-Installer für PostgreSQL/IIS/Waitress/Redis/NSSM.
 
 ## Wichtige Apps
 
@@ -97,6 +107,10 @@ Der Command erstellt oder aktualisiert:
 - Ergebnisansicht unter `/pruefungen/<id>/ergebnis/<versuch_id>/`.
 
 ### Payments
+
+Hinweis für den aktuellen ML-Einzelsystembetrieb: Zahlungen sind deaktiviert.
+Die folgenden Zahlungsfunktionen beschreiben den vorhandenen Bestand bzw. ein
+optionales späteres Modul und sind nicht Bestandteil der aktuellen Abnahme.
 
 - Zahlungseinstellungen im Django Admin:
   - `/admin/payments/zahlungseinstellungen/1/change/`

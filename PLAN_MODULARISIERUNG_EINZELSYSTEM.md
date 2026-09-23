@@ -1,5 +1,16 @@
 # Plan: ABoroLMS als modulares Einzelsystem mit Seriennummern
 
+## Aktualer Implementierungsstand – 23.09.2026
+
+Der ML-Betrieb läuft als Einzelsystem mit PostgreSQL als Produktionsstandard.
+Django 6.1.1, Python 3.12–3.14, Installer, Gunicorn/Nginx, Redis/Celery,
+Superadmin-Technikdashboard und visueller PageBuilder sind vorhanden. Zahlungen
+sind im ML-Einzelsystem deaktiviert; der Zahlungs-/Lizenzumfang dieses Dokuments
+bleibt deshalb Zielbild und ist nicht Teil der morgigen Betriebsabnahme.
+Lokal sind `check`, Migrationsprüfung und 47 Tests erfolgreich. Offen bleiben
+Serverbereitstellung, Datenmigration, Backup/Restore, Browser-/PDF-Abnahme,
+Upload-Sicherheit, Datenschutz und rechtliche Prüfung.
+
 Aktualisierung 20.09.2026: Einzelbetrieb standardmäßig aktiviert; Organisationsauswahl und Mandantenanmeldung entfernt, zentrale Verwaltungsrouten und serverseitige Betreiberzuordnung umgesetzt. Bisherige Organisations-Fremdschlüssel bleiben als interne Datenreferenz bestehen. Lizenzgenerator und übrige Modulplanung werden dadurch nicht als erledigt erklärt.
 
 Stand: 18.09.2026  
@@ -285,7 +296,7 @@ Wird das Prüfungsmodul ausgeschaltet, bleiben Zuordnung und Ergebnisse erhalten
 - Die Anwendung verwendet im Einzelsystem keine sichtbaren ABoroLMS-Platzhalter mehr; interne Paket- und Migrationsnamen bleiben aus Kompatibilitätsgründen unverändert.
 - Die Startseite erklärt das Angebot der ML Gruppe und führt direkt zu Lernpfaden, Prüfungspfaden und Anmeldung.
 - Für die produktive Aktivierung werden Logo, Favicon und die verbindlichen Farbwerte aus dem Styleguide der ML Gruppe in `OrganisationDesign` hinterlegt. Aus `mlgruppe.de` wurden als Arbeitswerte Tiefblau `#0c437b`, Türkis `#2fb2bf`/`#058eab`, Anthrazit `#2b2e34` und die helle Fläche `#f9f9fb` übernommen.
-- Bis zur Datenmigration bleibt der Schalter `SINGLE_SYSTEM_MODE` standardmäßig deaktiviert; dadurch werden bestehende Demo- und Mandantentests nicht vorzeitig umgestellt.
+- Für den ML-Produktivbetrieb wird `SINGLE_SYSTEM_MODE=True` verwendet. Historische Organisations-Fremdschlüssel bleiben bis zur geprüften Datenmigration intern erhalten; Demo-/Mehrmandantentests laufen weiterhin nur im expliziten Testmodus.
 
 ## 10. Datenmigration und Bestandsschutz
 

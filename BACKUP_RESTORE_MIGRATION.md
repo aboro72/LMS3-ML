@@ -1,5 +1,9 @@
 # Backup, Restore und Einzelsystem-Migration
 
+Stand: 23.09.2026. PostgreSQL ist die produktive Standarddatenbank; die vorhandenen
+SQLite-Befehle dienen weiterhin der lokalen Entwicklung. Ein produktiver PostgreSQL-
+Dump und eine testweise Wiederherstellung auf dem Zielserver sind noch durchzuführen.
+
 ## Aktueller ML-Betriebsmodus
 
 ML Gruppe läuft als Einzelsystem. Neue Zahlungen sind standardmäßig deaktiviert;

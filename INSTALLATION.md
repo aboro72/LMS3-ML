@@ -1,5 +1,9 @@
 # ABoroLMS installieren
 
+Stand: 23.09.2026. Referenz für den ML-Betrieb: Django 6.1.1, Python 3.12–3.14,
+PostgreSQL, Nginx/ISPConfig, Gunicorn, Redis und Celery. Zahlungen sind im
+ML-Einzelsystem deaktiviert.
+
 Die Installation besteht aus einem System-Bootstrap und einem einmaligen Web-Assistenten. Der Web-Assistent wird nicht öffentlich unter `/install/` aktiviert, sondern nur unter einer zufälligen Token-URL, die das Bootstrap-Skript ausgibt. Nach erfolgreicher Einrichtung wird der Assistent automatisch deaktiviert.
 
 ## Ubuntu / Debian
@@ -29,6 +33,9 @@ sudo bash deploy/install-linux.sh --with-postfix ...
 ```
 
 Danach die ausgegebene URL `/install/<token>/` einmalig im Browser öffnen. Der Assistent richtet die PostgreSQL-Verbindung, den Admin, SMTP und die Systemparameter ein. Für öffentliche Domains sollte HTTPS vor dem ersten produktiven Betrieb aktiviert werden.
+
+Nach der Installation sollten `/dashboard/`, `/startseite/pagebuilder/`,
+`/static/css/aborolms.css` und `/admin/` mit einem Superadmin geprüft werden.
 
 ## Windows Server
 

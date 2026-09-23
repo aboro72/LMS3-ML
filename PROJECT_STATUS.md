@@ -1,5 +1,15 @@
 # ABoroLMS Projektstatus
 
+## Aktueller Stand – 23.09.2026
+
+- Zielruntime: Django 6.1.1 mit Python 3.12, 3.13 oder 3.14; lokal aktuell Python 3.14.
+- Produktionsstandard: PostgreSQL, Gunicorn, Nginx/ISPConfig-Reverse-Proxy, Redis und Celery.
+- ML-Einzelsystem: Zahlungen deaktiviert; historische Zahlungs-/Rechnungsdaten bleiben nur lesend erhalten.
+- Superadmin-Dashboard zeigt technische Informationen, Auslastung, Benutzerverwaltung und Django-Administration.
+- Visueller PageBuilder mit Drag-and-drop-Bausteinen lokal umgesetzt; Serverbereitstellung und Browserabnahme stehen noch aus.
+- `manage.py check`: erfolgreich; Migrationsprüfung: keine offenen Änderungen; vollständige Testsuite: **47 Tests erfolgreich**.
+- Offene Betriebsabnahme: Backup/Restore, Datenmigrationsprobe, Browser-/PDF-Regression, Upload-/Virenscan-Konzept und rechtliche Prüfung.
+
 ## Einzelinstallation – 20.09.2026
 
 - Einzelbetrieb ist der Standard. Genau eine interne Betreiberkonfiguration ersetzt die Mandantenauswahl; mehrere Altbestände werden nicht stillschweigend vermischt.
@@ -67,8 +77,12 @@
 ## Noch offen
 
 - GTK3-Runtime fuer WeasyPrint-PDF-Export unter Windows (install-windows.ps1 laed sie automatisch herunter).
-- Echte Zahlungsintegration (Stripe, PayPal, Google Pay) mit Webhooks.
 - Einladungstoken-Flow: E-Mail-Versand und Annahme-View fuer eingeladene Nutzer.
+- Produktionsabnahme auf dem Zielserver einschließlich Backup/Restore.
+- Datenmigrationsprobe vom Mehrmandantenbestand in die Einzelinstallation.
+- Vollständige Browser- und PDF-Regressionstests.
+- Upload-Sicherheit mit MIME-Prüfung, Virenscan und Videoverarbeitung.
+- Datenschutz-/Verschlüsselungsphase 2 sowie rechtliche Prüfung von Rechnungen und Zertifikaten.
 
 ## Aktualisierung 2026-06-29
 
@@ -78,4 +92,4 @@
 - Org-Admin-Dashboard korrigiert: Zahlungsstatus verwendet jetzt die Modell-Konstante statt eines falschen Grossbuchstaben-Strings.
 - Erweiterungen umgesetzt: Lernpfade, Kursbewertungen, Trainer-Umsatzdashboard, Pruefungsstatistiken, Einladungsannahme per Token, Rechnungen/Belege und Audit-Log.
 - Production-Settings fuer optionalen S3-kompatiblen Medien-Storage auf Django-5-`STORAGES` aktualisiert.
-- Payment-Provider-Integration mit echten Stripe-/PayPal-/Google-Pay-Webhooks bleibt bewusst offen, bis API-Keys verfuegbar sind.
+- Echte Payment-Provider-Integration bleibt für das ML-Einzelsystem außerhalb des aktuellen Umfangs, da Zahlungen deaktiviert sind.

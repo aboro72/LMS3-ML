@@ -1,9 +1,16 @@
 # Lastenheft ABoroLMS / ML Gruppe
 
-**Stand:** 21.09.2026  
+**Stand:** 23.09.2026  
 **Projekt:** LMS mit Kurs-, Prüfungs-, Zertifikats- und Zahlungsfunktionen  
 **Bewertete Revision:** `f4fa398`  
 **Dokumenttyp:** Fachliche Anforderungen und belastbarer Ist-Stand
+
+**Aktualisierung:** Django 6.1.1/Python 3.12–3.14, PostgreSQL als Produktionsstandard,
+ML-Einzelsystem ohne aktive Zahlungen, visueller Drag-and-drop-PageBuilder sowie
+technisches Superadmin-Dashboard sind umgesetzt. Die lokale Validierung umfasst
+`check`, Migrationsprüfung und 47 erfolgreiche Tests. Produktionsabnahme, Migration,
+Backup/Restore, Browser-/PDF-Regression, Upload-Sicherheit und rechtliche Prüfung
+bleiben offen.
 
 ## 1. Zweck und Einordnung
 
@@ -32,7 +39,7 @@ Der Lizenzgenerator und die zentrale Lizenzdurchsetzung sind im aktuellen Checko
 
 - Django-Projekt unter `config` mit `manage.py`.
 - Fach-Apps: `accounts`, `organisations`, `courses`, `exams`, `certificates`, `payments`, `security`.
-- SQLite-Entwicklungsdatenbank; PostgreSQL und optional S3-kompatibler Medienspeicher sind für Produktion vorbereitet.
+- SQLite-Entwicklungsdatenbank; PostgreSQL ist Produktionsstandard, optionaler S3-kompatibler Medienspeicher ist vorbereitet.
 - Server-rendered Django-Templates mit statischem CSS und JavaScript-Unterstützung für Prüfungsabläufe.
 - Authentifizierung über Django und django-allauth.
 - PDF-Erzeugung über ReportLab für Prüfungsbögen und WeasyPrint für Zertifikate.
@@ -116,6 +123,10 @@ Die Rolle Prüfungsoperator ist fachlich für Fragenkataloge und Prüfungsparame
 
 ### 4.5 Zahlungen und Rechnungen
 
+Für die aktuelle ML-Einzelsystem-Abnahme sind Zahlungen deaktiviert. Dieser
+Abschnitt beschreibt den vorhandenen technischen Bestand und ein optionales
+späteres Modul, nicht einen aktiven Zahlungsfluss.
+
 - Zahlungsarten für Stripe, PayPal, Google Pay und Überweisung sind im Modell vorgesehen.
 - Zahlungseinstellungen und Secrets können im Admin gepflegt werden.
 - Zahlungen speichern Plattformgebühr und Traineranteil.
@@ -179,7 +190,7 @@ Das Lastenheft fordert:
 
 ## 6. Aktueller Verifikationsstand
 
-Am 21.09.2026 wurde der technische Stand im aktuellen Checkout erneut geprüft:
+Am 23.09.2026 wurde der technische Stand im aktuellen Checkout erneut geprüft:
 
 ```text
 python manage.py check
@@ -202,7 +213,7 @@ OK
 
 Im Rahmen der technischen Bereinigung wurden die fehlenden Migrationen für den aktuellen Modellstand ergänzt, der Prüfungszeitgeber beim Start eines Versuchs aktiviert, ungültige Zuordnungswerte für die korrekte Teilbewertung zugelassen, das Einzelbetriebs-/Mehrmandanten-Routing entkoppelt und der Demo-Daten-Schutztest korrigiert. Die Testbasis für fachlich mehrmandantenbezogene Szenarien verwendet den expliziten Mehrmandanten-Testmodus; die Produktivvoreinstellung `SINGLE_SYSTEM_MODE=True` bleibt unverändert.
 
-Damit ist der technische Entwicklungsstand für die vorhandenen automatisierten Kernfälle stabil. Eine fachliche Produktivabnahme ist weiterhin nicht erfolgt; insbesondere Lizenzierung, echte Zahlungsanbieter, rechtliche Dokumentanforderungen, Backup/Restore und Browser-Smoke-Tests bleiben offen.
+Damit ist der technische Entwicklungsstand für die vorhandenen automatisierten Kernfälle stabil. Eine fachliche Produktivabnahme ist weiterhin nicht erfolgt; insbesondere Lizenzierung, rechtliche Dokumentanforderungen, Backup/Restore, Datenmigration und Browser-/PDF-Smoke-Tests bleiben offen. Echte Zahlungsanbieter gehören im ML-Einzelsystem derzeit nicht zum aktiven Umfang.
 
 ## 7. Abnahmekriterien
 
