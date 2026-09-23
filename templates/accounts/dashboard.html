@@ -23,7 +23,37 @@
     <a class="btn btn-outline-secondary" href="{% url 'profile' %}">Mein Profil</a>
 </div>
 
-{% if ist_exam_operator or ist_superadmin %}
+{% if ist_superadmin %}
+<div class="row g-3 mb-4">
+    <div class="col-lg-8"><div class="aboro-panel h-100">
+        <h2 class="h5">Systemüberblick</h2>
+        <p class="text-secondary mb-3">Technischer Zustand und aktuelle Auslastung dieser ABoroLMS-Installation.</p>
+        <div class="row g-3">
+            <div class="col-sm-4"><div class="small text-secondary">CPU-Kerne</div><div class="h4 mb-0">{{ admin_system_info.cpu_count }}</div></div>
+            <div class="col-sm-4"><div class="small text-secondary">Load Average</div><div class="h4 mb-0">{% if admin_system_info.load_average != None %}{{ admin_system_info.load_average }}{% else %}n/a{% endif %}</div></div>
+            <div class="col-sm-4"><div class="small text-secondary">Freier Speicher</div><div class="h4 mb-0">{{ admin_system_info.disk_free|filesizeformat }}</div></div>
+        </div>
+    </div></div>
+    <div class="col-lg-4"><div class="aboro-panel h-100">
+        <h2 class="h5">Administration</h2>
+        <p class="text-secondary">Benutzer, Rollen und Sonderfunktionen zentral verwalten.</p>
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-aboro" href="{% url 'system_members' %}">Benutzerverwaltung</a>
+            <a class="btn btn-outline-secondary" href="{% url 'admin:index' %}">Django Administration</a>
+        </div>
+    </div></div>
+</div>
+<div class="aboro-panel mb-4">
+    <h2 class="h5 mb-3">Technische Informationen</h2>
+    <div class="row g-3 small">
+        <div class="col-md-4"><span class="text-secondary">Django</span><br><strong>{{ admin_system_info.django_version }}</strong></div>
+        <div class="col-md-4"><span class="text-secondary">Python</span><br><strong>{{ admin_system_info.python_version }}</strong></div>
+        <div class="col-md-4"><span class="text-secondary">Datenbank</span><br><strong>{{ admin_system_info.database }}</strong></div>
+        <div class="col-md-4"><span class="text-secondary">Server</span><br><strong>{{ admin_system_info.hostname }}</strong></div>
+        <div class="col-md-8"><span class="text-secondary">Betriebssystem</span><br><strong>{{ admin_system_info.platform }}</strong></div>
+    </div>
+</div>
+{% elif ist_exam_operator %}
 <div class="row g-3 mb-4">
     <div class="col-md-6"><div class="aboro-panel h-100">
         <h2 class="h5">Fragenkataloge</h2>
@@ -37,6 +67,7 @@
     </div></div>
 </div>
 {% endif %}
+{% if not ist_superadmin %}
 {% if ist_trainer and not ist_superadmin %}
 <div class="row g-3 mb-4">
     <div class="col-md-3"><div class="aboro-panel h-100"><div class="text-secondary small">Laufend</div><div class="display-6">{{ trainer_exam_counts.laufend }}</div></div></div>
@@ -234,5 +265,6 @@
         <p class="text-secondary mb-0">Noch keine Zertifikate. Bestehe eine Pruefung, um dein erstes zu erhalten.</p>
     {% endif %}
 </div>
+{% endif %}
 {% endif %}
 {% endblock %}

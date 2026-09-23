@@ -25,7 +25,11 @@
 #   - Root-Rechte (sudo)
 #   - Internetverbindung
 # =============================================================================
-set -euo pipefail
+set -eu
+# pipefail ist für Bash sinnvoll, aber nicht auf jedem Minimal-System
+# verfügbar. Der Installer bleibt auch ohne diese optionale Erweiterung
+# lauffähig.
+set -o pipefail 2>/dev/null || true
 
 # --------------------------------------------------------------------------- #
 # Standardwerte
@@ -35,7 +39,8 @@ DB="postgresql"
 REPO_URL="https://github.com/YOUR_USERNAME/LMS.git"
 APP_DIR="/opt/aborolms"
 APP_USER="aborolms"
-PYTHON_VERSION="3.12"
+PYTHON_VERSION=""
+PYTHON_COMMAND=""
 DB_NAME="aborolms"
 DB_USER="aborolms"
 DB_PASS=""
@@ -104,11 +109,38 @@ echo ""
 echo "[1/9] System-Pakete aktualisieren..."
 apt-get update -qq
 
+# Python-Version aus den tatsächlich verfügbaren Debian/Ubuntu-Paketquellen
+# wählen. Django 6.1.1 unterstützt Python 3.12, 3.13 und 3.14.
+for candidate in 3.14 3.13 3.12; do
+  if apt-cache show "python${candidate}-venv" >/dev/null 2>&1 && \
+     apt-cache show "python${candidate}-dev" >/dev/null 2>&1; then
+    PYTHON_VERSION="$candidate"
+    PYTHON_COMMAND="python${candidate}"
+    break
+  fi
+done
+
+if [[ -z "$PYTHON_COMMAND" ]] && command -v python3 >/dev/null 2>&1; then
+  PYTHON_COMMAND="python3"
+  PYTHON_VERSION="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
+  if [[ "$(python3 -c 'import sys; print(sys.version_info < (3, 12))')" == "True" ]]; then
+    echo "Fehler: Django 6.1.1 benötigt Python 3.12, 3.13 oder 3.14; gefunden wurde $PYTHON_VERSION."
+    exit 1
+  fi
+fi
+
+if [[ -z "$PYTHON_COMMAND" ]]; then
+  echo "Fehler: Keine unterstützte Python-Version gefunden. Django 6.1.1 benötigt Python 3.12, 3.13 oder 3.14 mit venv und dev-Paket."
+  exit 1
+fi
+
+echo "  Python: $PYTHON_COMMAND ($PYTHON_VERSION)"
+
 # Basis-Pakete (immer benötigt)
 apt_install \
-  python${PYTHON_VERSION} \
-  python${PYTHON_VERSION}-venv \
-  python${PYTHON_VERSION}-dev \
+  "$PYTHON_COMMAND" \
+  "${PYTHON_COMMAND}-venv" \
+  "${PYTHON_COMMAND}-dev" \
   python3-pip \
   build-essential \
   git \
@@ -174,7 +206,7 @@ fi
 # ===========================================================================#
 echo ""
 echo "[4/9] Python-Virtualenv und Abhängigkeiten installieren..."
-sudo -u "$APP_USER" python${PYTHON_VERSION} -m venv "$APP_DIR/.venv"
+sudo -u "$APP_USER" "$PYTHON_COMMAND" -m venv "$APP_DIR/.venv"
 PIP="$APP_DIR/.venv/bin/pip"
 
 sudo -u "$APP_USER" "$PIP" install --upgrade pip
@@ -304,6 +336,26 @@ else
   echo "  .env existiert bereits, wird nicht überschrieben."
 fi
 
+# Bei einem abgebrochenen oder früheren Lauf fehlende Installer-/Workerwerte
+# ergänzen, ohne bestehende Datenbank- oder Geheimwerte zu überschreiben.
+ensure_env_key() {
+  local key="$1"
+  local value="$2"
+  if ! grep -q "^${key}=" "$ENV_FILE"; then
+    printf '%s\n' "${key}=${value}" >> "$ENV_FILE"
+  fi
+}
+
+ensure_env_key "REDIS_URL" "redis://127.0.0.1:6379/0"
+ensure_env_key "CELERY_BROKER_URL" "redis://127.0.0.1:6379/0"
+ensure_env_key "CELERY_RESULT_BACKEND" "redis://127.0.0.1:6379/0"
+ensure_env_key "PAYMENTS_ENABLED" "False"
+ensure_env_key "PAYMENTS_ALLOW_SINGLE_SYSTEM" "False"
+ensure_env_key "INSTALLER_ENABLED" "True"
+ensure_env_key "INSTALLER_TOKEN" "$INSTALLER_TOKEN"
+chown "$APP_USER:$APP_USER" "$ENV_FILE"
+chmod 640 "$ENV_FILE"
+
 # ===========================================================================#
 # SCHRITT 7 – Django vorbereiten                                              #
 # ===========================================================================#
@@ -341,7 +393,7 @@ EnvironmentFile=${APP_DIR}/.env
 Environment=DJANGO_SETTINGS_MODULE=config.settings.production
 ExecStart=${APP_DIR}/.venv/bin/gunicorn \\
     --workers 4 \\
-    --bind unix:/run/aborolms/gunicorn.sock \\
+    --bind 0.0.0.0:8000 \\
     --timeout 120 \\
     config.wsgi:application
 RuntimeDirectory=aborolms

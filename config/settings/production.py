@@ -4,6 +4,9 @@ from .base import *  # noqa: F403
 
 DEBUG = False
 PRODUCTION = True
+# Statische Dateien in der Produktion direkt über die Django-Anwendung
+# ausliefern; der ISPConfig-Proxy muss keinen lokalen Dateipfad kennen.
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")  # noqa: F405
 PAYMENT_DEMO_AUTOCONFIRM = False
 PAYMENTS_ENABLED = config("PAYMENTS_ENABLED", default=False, cast=bool)  # noqa: F405
 PAYMENTS_ALLOW_SINGLE_SYSTEM = config("PAYMENTS_ALLOW_SINGLE_SYSTEM", default=False, cast=bool)  # noqa: F405
@@ -79,6 +82,14 @@ if config("AWS_STORAGE_BUCKET_NAME", default=""):  # noqa: F405
     AWS_ACCESS_KEY_ID = config("AWS_ACCESS_KEY_ID", default="")  # noqa: F405
     AWS_SECRET_ACCESS_KEY = config("AWS_SECRET_ACCESS_KEY", default="")  # noqa: F405
     AWS_STORAGE_BUCKET_NAME = config("AWS_STORAGE_BUCKET_NAME")  # noqa: F405
+
+if not config("AWS_STORAGE_BUCKET_NAME", default=""):  # noqa: F405
+    STORAGES = {
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+        },
+    }
 
 # Erst nach HTTPS-Pruefung auf einen laengeren Zeitraum erhoehen.
 SECURE_HSTS_SECONDS = config("SECURE_HSTS_SECONDS", default=3600, cast=int)

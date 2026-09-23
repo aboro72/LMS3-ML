@@ -6,6 +6,9 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views.generic import CreateView, TemplateView, UpdateView
+import os
+import platform
+import shutil
 
 from .forms import OrganisationLoginForm, ProfilForm, RegisterForm
 from .models import Rolle, UserProfile
@@ -28,6 +31,39 @@ class DashboardView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from django import get_version as django_version
+
+        if self.request.user.is_superuser or self.request.user.groups.filter(name=Rolle.SUPERADMIN).exists():
+            disk = shutil.disk_usage(settings.BASE_DIR)
+            load_average = None
+            try:
+                load_average = round(os.getloadavg()[0], 2)
+            except (AttributeError, OSError):
+                pass
+            memory_total = memory_available = None
+            try:
+                meminfo = {}
+                with open("/proc/meminfo", encoding="ascii") as mem_file:
+                    for line in mem_file:
+                        key, value = line.split(":", 1)
+                        meminfo[key] = int(value.strip().split()[0]) * 1024
+                memory_total = meminfo.get("MemTotal")
+                memory_available = meminfo.get("MemAvailable")
+            except (FileNotFoundError, OSError, ValueError):
+                pass
+            context["admin_system_info"] = {
+                "django_version": django_version(),
+                "python_version": platform.python_version(),
+                "platform": platform.platform(),
+                "hostname": platform.node() or "unbekannt",
+                "database": "PostgreSQL / Einzelinstallation" if settings.SINGLE_SYSTEM_MODE else "konfiguriert",
+                "cpu_count": os.cpu_count() or 1,
+                "load_average": load_average,
+                "memory_total": memory_total,
+                "memory_available": memory_available,
+                "disk_total": disk.total,
+                "disk_free": disk.free,
+            }
         profile = self.request.user.profile.select_related("organisation").filter(aktiv=True)
         if getattr(self.request, "tenant_org", None) and not self.request.user.is_superuser:
             profile = profile.filter(organisation=self.request.tenant_org)

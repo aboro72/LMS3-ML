@@ -228,7 +228,7 @@ switch ($DbEngine) {
     }
     "mongodb" {
         & $Pip install "django-mongodb-backend" "pymongo>=4.6"
-        Write-Host "  HINWEIS: MongoDB ist für Django 6 experimentell." -ForegroundColor Yellow
+        Write-Host "  HINWEIS: MongoDB ist kein unterstütztes Produktionsziel für Django 6.1.1." -ForegroundColor Yellow
     }
 }
 

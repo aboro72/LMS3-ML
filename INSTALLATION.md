@@ -16,9 +16,9 @@ Unbeaufsichtigt mit lokalem PostgreSQL, Nginx, Redis und Celery:
 
 ```bash
 sudo bash deploy/install-linux.sh \
-  --repo https://example.invalid/aborolms.git \
-  --domain lms.example.de \
-  --db-pass 'ein-sicheres-datenbankpasswort' \
+  --repo https://github.com/aboro72/LMS3-ML.git \
+  --domain lms-3.ml-projekt.de \
+  --db-pass 'quaSeu2i' \
   --unattended
 ```
 

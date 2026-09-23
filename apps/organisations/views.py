@@ -317,6 +317,8 @@ class OrgStartseiteView(RollenMixin, View):
             form.save()
             weiterleitung_form.save()
             messages.success(request, "Startseite gespeichert.")
+            if settings.SINGLE_SYSTEM_MODE:
+                return redirect("single_system_startseite_editor")
             return redirect("org_startseite", slug=slug)
         return render(request, "organisations/startseite_editor.html", self._ctx(org, form, weiterleitung_form))
 
@@ -367,6 +369,8 @@ class OrgStartseitePageBuilderView(RollenMixin, View):
         seite.save()
         weiterleitung_form.save()
         messages.success(request, "PageBuilder-Inhalt gespeichert.")
+        if settings.SINGLE_SYSTEM_MODE:
+            return redirect("single_system_pagebuilder")
         return redirect("org_startseite_pagebuilder", slug=org.slug)
 
 
@@ -424,11 +428,9 @@ class SingleSystemStartseiteView(OffentlicheStartseiteView):
     single_system_route = True
 
     def get_context_data(self, **kwargs):
-        self.kwargs["slug"] = settings.SINGLE_SYSTEM_ORGANISATION_SLUG
-        if not Organisation.objects.filter(slug=self.kwargs["slug"], aktiv=True).exists():
-            fallback = Organisation.objects.filter(aktiv=True).order_by("pk").first()
-            if fallback:
-                self.kwargs["slug"] = fallback.slug
+        from .single_system import system_organisation
+
+        self.kwargs["slug"] = system_organisation().slug
         return super().get_context_data(**kwargs)
 
 
@@ -436,8 +438,9 @@ class SingleSystemStartseiteEditorView(OrgStartseiteView):
     """Optionaler Pagebuilder unter /startseite ohne Mandantenpräfix."""
 
     def _slug(self):
-        configured = Organisation.objects.filter(slug=settings.SINGLE_SYSTEM_ORGANISATION_SLUG, aktiv=True).first()
-        return (configured or Organisation.objects.filter(aktiv=True).order_by("pk").first()).slug
+        from .single_system import system_organisation
+
+        return system_organisation().slug
 
     def get(self, request):
         return super().get(request, self._slug())
@@ -448,8 +451,9 @@ class SingleSystemStartseiteEditorView(OrgStartseiteView):
 
 class SingleSystemPageBuilderView(OrgStartseitePageBuilderView):
     def _slug(self):
-        configured = Organisation.objects.filter(slug=settings.SINGLE_SYSTEM_ORGANISATION_SLUG, aktiv=True).first()
-        return (configured or Organisation.objects.filter(aktiv=True).order_by("pk").first()).slug
+        from .single_system import system_organisation
+
+        return system_organisation().slug
 
     def get(self, request):
         return super().get(request, self._slug())
