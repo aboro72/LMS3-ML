@@ -37,7 +37,136 @@
     </div></div>
 </div>
 {% endif %}
-{% if not operator_arbeitsplatz %}
+{% if ist_trainer and not ist_superadmin %}
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="aboro-panel h-100"><div class="text-secondary small">Laufend</div><div class="display-6">{{ trainer_exam_counts.laufend }}</div></div></div>
+    <div class="col-md-3"><div class="aboro-panel h-100"><div class="text-secondary small">Bewertung ausstehend</div><div class="display-6">{{ trainer_exam_counts.ausstehend }}</div></div></div>
+    <div class="col-md-3"><div class="aboro-panel h-100"><div class="text-secondary small">Bestanden</div><div class="display-6 text-success">{{ trainer_exam_counts.bestanden }}</div></div></div>
+    <div class="col-md-3"><div class="aboro-panel h-100"><div class="text-secondary small">Nicht bestanden</div><div class="display-6 text-danger">{{ trainer_exam_counts.nicht_bestanden }}</div></div></div>
+</div>
+<div class="aboro-panel">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Prüfungsteilnehmer und Versuche</h2>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'trainer_exam_list' %}">Prüfungen</a>
+    </div>
+    {% if trainer_exam_attempts %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Teilnehmer</th><th>Prüfung</th><th>Versuch</th><th>Status</th><th>Ergebnis</th><th>Gestartet</th></tr></thead>
+                <tbody>
+                {% for versuch in trainer_exam_attempts %}
+                    <tr>
+                        <td>{{ versuch.nutzer.get_full_name|default:versuch.nutzer.username }}</td>
+                        <td>{{ versuch.pruefung.titel }}</td>
+                        <td>#{{ versuch.versuch_nummer }}</td>
+                        <td>{{ versuch.get_status_display }}</td>
+                        <td>
+                            {% if versuch.status == "ABGESCHLOSSEN" %}
+                                {% if versuch.bestanden %}<span class="text-success fw-semibold">Bestanden</span>{% else %}<span class="text-danger fw-semibold">Nicht bestanden</span>{% endif %}
+                                <span class="small text-secondary">({{ versuch.prozent_erreicht }} %)</span>
+                            {% elif versuch.status == "AUSSTEHEND" %}
+                                <span class="text-warning-emphasis">Bewertung ausstehend</span>
+                            {% else %}
+                                <span class="text-secondary">Noch nicht abgeschlossen</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-secondary small">{{ versuch.gestartet_am|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-secondary mb-0">Aktuell liegen noch keine Prüfungsversuche vor.</p>
+    {% endif %}
+</div>
+{% elif not operator_arbeitsplatz %}
+{% if ist_learner %}
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="aboro-panel h-100">
+            <h2 class="h5 mb-3">Meine Prüfungseinladungen</h2>
+            {% if learner_exam_invitations or learner_exam_registrations %}
+                <div class="list-group list-group-flush">
+                    {% for invitation in learner_exam_invitations %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
+                            <div>
+                                <div class="fw-semibold">{{ invitation.pruefung.titel }}</div>
+                                <div class="small text-secondary">Einladung von {{ invitation.organisation.name }}</div>
+                            </div>
+                            <a class="btn btn-sm btn-aboro" href="{% url 'org_invitation_accept' invitation.token %}">Einladung öffnen</a>
+                        </div>
+                    {% endfor %}
+                    {% for registration in learner_exam_registrations %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
+                            <div>
+                                <div class="fw-semibold">{{ registration.pruefung.titel }}</div>
+                                <div class="small text-secondary">Einladung angenommen · angemeldet am {{ registration.angemeldet_am|date:"d.m.Y" }}</div>
+                            </div>
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'exam_detail' registration.pruefung.pk %}">Prüfung öffnen</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">Keine offenen Prüfungseinladungen.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="aboro-panel h-100">
+            <h2 class="h5 mb-3">Freigegebene Prüfungen</h2>
+            {% if learner_exam_releases %}
+                <div class="list-group list-group-flush">
+                    {% for release in learner_exam_releases %}
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center gap-3">
+                            <span class="fw-semibold">{{ release.pruefung.titel }}</span>
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'exam_detail' release.pruefung.pk %}">Prüfung öffnen</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-secondary mb-0">Noch keine Prüfung freigegeben.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="aboro-panel mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 mb-0">Meine Prüfungen und Versuche</h2>
+        <a class="btn btn-sm btn-outline-secondary" href="{% url 'exam_result_list' %}">Alle Ergebnisse</a>
+    </div>
+    {% if learner_exam_attempts %}
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead><tr><th>Prüfung</th><th>Versuch</th><th>Status</th><th>Ergebnis</th><th>Datum</th></tr></thead>
+                <tbody>
+                {% for versuch in learner_exam_attempts %}
+                    <tr>
+                        <td>{{ versuch.pruefung.titel }}</td>
+                        <td>#{{ versuch.versuch_nummer }}</td>
+                        <td>{{ versuch.get_status_display }}</td>
+                        <td>
+                            {% if versuch.status == "ABGESCHLOSSEN" or versuch.status == "ABGELAUFEN" or versuch.status == "ABGEBROCHEN" %}
+                                {% if versuch.bestanden %}<span class="text-success fw-semibold">Bestanden</span>{% else %}<span class="text-danger fw-semibold">Nicht bestanden</span>{% endif %}
+                                {% if versuch.status == "ABGESCHLOSSEN" %}<span class="small text-secondary">({{ versuch.prozent_erreicht }} %)</span>{% endif %}
+                            {% elif versuch.status == "AUSSTEHEND" %}
+                                <span class="text-warning-emphasis">Bewertung ausstehend</span>
+                            {% else %}
+                                <span class="text-secondary">Noch nicht abgeschlossen</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-secondary small">{{ versuch.gestartet_am|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-secondary mb-0">Noch keine Prüfungsversuche vorhanden.</p>
+    {% endif %}
+</div>
+{% endif %}
 <div class="row g-3 mb-3">
     <div class="col-lg-8">
         <div class="aboro-panel h-100">

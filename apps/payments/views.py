@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q, Sum
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -15,7 +16,12 @@ from apps.organisations.models import Organisation
 
 from .forms import CheckoutForm, OrganisationZahlungseinstellungenForm, PaymentSwitchForm
 from .models import AuditLog, Auszahlungsstatus, Rechnung, Zahlung, Zahlungsart, Zahlungsstatus
-from .services import bestaetige_zahlung, erstelle_zahlung, lade_zahlungseinstellungen, log_audit, zahlungsart_ist_automatisch
+from .services import bestaetige_zahlung, erstelle_zahlung, lade_zahlungseinstellungen, log_audit, payments_enabled, zahlungsart_ist_automatisch
+
+
+def require_payments_enabled():
+    if not payments_enabled():
+        raise Http404("Zahlungen sind in dieser Installation deaktiviert.")
 
 
 class SuperadminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
@@ -28,6 +34,7 @@ class CheckoutView(LoginRequiredMixin, FormView):
     template_name = "payments/checkout.html"
 
     def dispatch(self, request, *args, **kwargs):
+        require_payments_enabled()
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         kurs_queryset = Kurs.objects.filter(slug=kwargs["slug"], ist_veroeffentlicht=True, organisation__aktiv=True)
@@ -117,6 +124,7 @@ class TrainerPayoutListView(SuperadminRequiredMixin, ListView):
     context_object_name = "zahlungen"
 
     def get_queryset(self):
+        require_payments_enabled()
         return (
             Zahlung.objects.filter(
                 Q(status=Zahlungsstatus.BEZAHLT)
@@ -146,6 +154,7 @@ class TrainerPayoutListView(SuperadminRequiredMixin, ListView):
 
 class BankTransferConfirmView(SuperadminRequiredMixin, View):
     def post(self, request, zahlung_id):
+        require_payments_enabled()
         zahlung = get_object_or_404(Zahlung, zahlung_id=zahlung_id, zahlungsart=Zahlungsart.BANK_TRANSFER)
         bestaetige_zahlung(zahlung, provider_referenz="manual-bank-transfer", actor=request.user)
         messages.success(request, "Ueberweisung bestaetigt und Kurs freigeschaltet.")
@@ -156,6 +165,7 @@ class OrganisationBankTransferConfirmView(RollenMixin, View):
     rolle = Rolle.ORG_ADMIN
 
     def post(self, request, zahlung_id):
+        require_payments_enabled()
         queryset = Zahlung.objects.filter(zahlung_id=zahlung_id, zahlungsart=Zahlungsart.BANK_TRANSFER)
         if not request.user.is_superuser:
             queryset = queryset.filter(kurs__organisation__userprofile__nutzer=request.user, kurs__organisation__userprofile__rolle=Rolle.ORG_ADMIN, kurs__organisation__userprofile__aktiv=True)
@@ -167,6 +177,7 @@ class OrganisationBankTransferConfirmView(RollenMixin, View):
 
 class PayoutMarkNotifiedView(SuperadminRequiredMixin, View):
     def post(self, request, zahlung_id):
+        require_payments_enabled()
         zahlung = get_object_or_404(Zahlung, zahlung_id=zahlung_id, status=Zahlungsstatus.BEZAHLT)
         zahlung.auszahlungsstatus = Auszahlungsstatus.GEMELDET
         zahlung.betreiber_notiz = "Betreiber wurde ueber die auszuzahlende Summe informiert."
@@ -178,6 +189,7 @@ class PayoutMarkNotifiedView(SuperadminRequiredMixin, View):
 
 class PayoutMarkPaidView(SuperadminRequiredMixin, View):
     def post(self, request, zahlung_id):
+        require_payments_enabled()
         zahlung = get_object_or_404(Zahlung, zahlung_id=zahlung_id, status=Zahlungsstatus.BEZAHLT)
         zahlung.auszahlungsstatus = Auszahlungsstatus.AUSGEZAHLT
         zahlung.ausgezahlt_am = timezone.now()
@@ -219,6 +231,7 @@ class PaymentSettingsView(SuperadminRequiredMixin, FormView):
     form_class = PaymentSwitchForm
 
     def get_form_kwargs(self):
+        require_payments_enabled()
         kwargs = super().get_form_kwargs()
         kwargs["instance"] = lade_zahlungseinstellungen()
         return kwargs
@@ -237,6 +250,7 @@ class OrganisationPaymentSettingsView(RollenMixin, FormView):
     form_class = OrganisationZahlungseinstellungenForm
 
     def dispatch(self, request, *args, **kwargs):
+        require_payments_enabled()
         if request.user.is_superuser:
             self.org = get_object_or_404(Organisation, slug=kwargs["slug"])
         else:

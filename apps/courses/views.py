@@ -1,6 +1,8 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Avg, Count, Prefetch, Q, Sum
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views import View
@@ -62,7 +64,22 @@ def kurszugriff_bezahlt(user, kurs):
 def get_tenant_org(slug):
     if not slug:
         return None
+    if settings.SINGLE_SYSTEM_MODE:
+        from django.http import Http404
+        raise Http404("Mandantenpfade sind im Einzelsystem deaktiviert.")
     return get_object_or_404(Organisation, slug=slug, aktiv=True)
+
+
+def ensure_learning_paths_enabled():
+    if settings.SINGLE_SYSTEM_MODE:
+        from django.http import Http404
+        raise Http404("Lernpfade sind im ML-Einzelsystem nicht aktiviert.")
+
+
+class LearningPathsEnabledMixin:
+    def dispatch(self, request, *args, **kwargs):
+        ensure_learning_paths_enabled()
+        return super().dispatch(request, *args, **kwargs)
 
 
 def scope_to_active_org(queryset, request):
@@ -107,6 +124,10 @@ class KursKatalogView(ListView):
     paginate_by = 12
 
     def dispatch(self, request, *args, **kwargs):
+        if (
+            settings.SINGLE_SYSTEM_MODE
+        ):
+            raise Http404("Der öffentliche Kurskatalog ist im ML-Prüfungsportal nicht aktiviert.")
         self.tenant_org = get_tenant_org(kwargs.get("org_slug")) if kwargs.get("org_slug") else None
         return super().dispatch(request, *args, **kwargs)
 
@@ -178,8 +199,8 @@ class KursDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from apps.payments.services import lade_zahlungseinstellungen
-        context["payment_aktiv"] = lade_zahlungseinstellungen(self.object.organisation).payment_aktiv
+        from apps.payments.services import lade_zahlungseinstellungen, payments_enabled
+        context["payment_aktiv"] = payments_enabled() and lade_zahlungseinstellungen(self.object.organisation).payment_aktiv
         if self.request.user.is_authenticated:
             context["einschreibung"] = Einschreibung.objects.filter(
                 nutzer=self.request.user,
@@ -198,6 +219,10 @@ class EinschreibenView(LoginRequiredMixin, View):
         queryset = scope_to_active_org(queryset, request)
         kurs = get_object_or_404(queryset)
         if not kurs.ist_kostenlos and kurs.preis > 0:
+            from apps.payments.services import payments_enabled
+            if not payments_enabled():
+                messages.error(request, "Kostenpflichtige Kurse sind in dieser Installation nicht aktiviert.")
+                return redirect("course_detail", slug=kurs.slug)
             return redirect("course_checkout", slug=kurs.slug)
         Einschreibung.objects.update_or_create(nutzer=request.user, kurs=kurs, defaults={"bezahlt": True})
         if kurs.pruefung_id:
@@ -234,6 +259,10 @@ class KursLernenView(LoginRequiredMixin, DetailView):
         self.tenant_org = get_tenant_org(kwargs.get("org_slug")) if kwargs.get("org_slug") else None
         self.object = self.get_object()
         if not kurszugriff_bezahlt(request.user, self.object):
+            from apps.payments.services import payments_enabled
+            if not payments_enabled():
+                messages.error(request, "Dieser kostenpflichtige Kurs ist in dieser Installation nicht freigeschaltet.")
+                return redirect("course_detail", slug=self.object.slug)
             messages.warning(request, "Bitte bezahle den Kurs, um unbegrenzten Zugriff zu erhalten.")
             return redirect("course_checkout", slug=self.object.slug)
         self.einschreibung, _ = Einschreibung.objects.update_or_create(
@@ -598,6 +627,7 @@ class LernpfadListView(ListView):
     paginate_by = 12
 
     def dispatch(self, request, *args, **kwargs):
+        ensure_learning_paths_enabled()
         self.tenant_org = get_tenant_org(kwargs.get("org_slug")) if kwargs.get("org_slug") else None
         return super().dispatch(request, *args, **kwargs)
 
@@ -623,6 +653,7 @@ class LernpfadDetailView(DetailView):
     slug_url_kwarg = "slug"
 
     def dispatch(self, request, *args, **kwargs):
+        ensure_learning_paths_enabled()
         self.tenant_org = get_tenant_org(kwargs.get("org_slug")) if kwargs.get("org_slug") else None
         return super().dispatch(request, *args, **kwargs)
 
@@ -653,7 +684,7 @@ class LernpfadDetailView(DetailView):
         return context
 
 
-class LernpfadEinschreibenView(LoginRequiredMixin, View):
+class LernpfadEinschreibenView(LearningPathsEnabledMixin, LoginRequiredMixin, View):
     def post(self, request, slug, org_slug=None):
         queryset = Lernpfad.objects.filter(slug=slug, ist_veroeffentlicht=True, organisation__aktiv=True)
         if org_slug:
@@ -676,6 +707,11 @@ class LernpfadEinschreibenView(LoginRequiredMixin, View):
 class TrainerUmsatzDashboardView(RollenMixin, TemplateView):
     rolle = Rolle.TRAINER
     template_name = "courses/trainer/revenue_dashboard.html"
+
+    def dispatch(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE:
+            raise Http404("Das Umsatzdashboard ist im ML-Prüfungsportal nicht aktiviert.")
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -704,7 +740,7 @@ def trainer_learning_path_queryset(user):
     return queryset.filter(organisation_id__in=organisation_ids)
 
 
-class TrainerLernpfadListView(RollenMixin, ListView):
+class TrainerLernpfadListView(LearningPathsEnabledMixin, RollenMixin, ListView):
     rolle = Rolle.TRAINER
     template_name = "courses/trainer/learning_path_list.html"
     context_object_name = "lernpfade"
@@ -713,7 +749,7 @@ class TrainerLernpfadListView(RollenMixin, ListView):
         return trainer_learning_path_queryset(self.request.user).order_by("organisation__name", "titel")
 
 
-class TrainerLernpfadCreateView(RollenMixin, CreateView):
+class TrainerLernpfadCreateView(LearningPathsEnabledMixin, RollenMixin, CreateView):
     rolle = Rolle.TRAINER
     form_class = LernpfadForm
     template_name = "courses/trainer/learning_path_form.html"
@@ -732,7 +768,7 @@ class TrainerLernpfadCreateView(RollenMixin, CreateView):
         return reverse("trainer_learning_path_edit", kwargs={"slug": self.object.slug})
 
 
-class TrainerLernpfadUpdateView(RollenMixin, UpdateView):
+class TrainerLernpfadUpdateView(LearningPathsEnabledMixin, RollenMixin, UpdateView):
     rolle = Rolle.TRAINER
     form_class = LernpfadForm
     template_name = "courses/trainer/learning_path_form.html"
@@ -760,7 +796,7 @@ class TrainerLernpfadUpdateView(RollenMixin, UpdateView):
         return reverse("trainer_learning_path_edit", kwargs={"slug": self.object.slug})
 
 
-class TrainerLernpfadKursCreateView(RollenMixin, View):
+class TrainerLernpfadKursCreateView(LearningPathsEnabledMixin, RollenMixin, View):
     rolle = Rolle.TRAINER
 
     def post(self, request, slug):
@@ -776,7 +812,7 @@ class TrainerLernpfadKursCreateView(RollenMixin, View):
         return redirect("trainer_learning_path_edit", slug=lernpfad.slug)
 
 
-class TrainerLernpfadKursDeleteView(RollenMixin, View):
+class TrainerLernpfadKursDeleteView(LearningPathsEnabledMixin, RollenMixin, View):
     rolle = Rolle.TRAINER
 
     def post(self, request, slug, link_id):

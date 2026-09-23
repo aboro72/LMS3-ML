@@ -12,46 +12,6 @@
                 <a href="{% if tenant_org and not single_system_mode %}{% url 'tenant_register' tenant_org.slug %}{% else %}{% url 'register' %}{% endif %}">Jetzt registrieren</a>
             </p>
 
-            <div class="mb-4">
-                <div class="small text-secondary mb-2">Demo-Zugang</div>
-                <div class="d-grid gap-2">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <form method="post" action="{{ request.get_full_path }}">
-                                {% csrf_token %}
-                                <input type="hidden" name="login" value="orgadmin">
-                                <input type="hidden" name="password" value="ChangeMe123!">
-                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Org-Admin</button>
-                            </form>
-                        </div>
-                        <div class="col-6">
-                            <form method="post" action="{{ request.get_full_path }}">
-                                {% csrf_token %}
-                                <input type="hidden" name="login" value="trainer">
-                                <input type="hidden" name="password" value="ChangeMe123!">
-                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Trainer</button>
-                            </form>
-                        </div>
-                        <div class="col-6">
-                            <form method="post" action="{{ request.get_full_path }}">
-                                {% csrf_token %}
-                                <input type="hidden" name="login" value="examiner">
-                                <input type="hidden" name="password" value="ChangeMe123!">
-                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Pruefer</button>
-                            </form>
-                        </div>
-                        <div class="col-6">
-                            <form method="post" action="{{ request.get_full_path }}">
-                                {% csrf_token %}
-                                <input type="hidden" name="login" value="learner">
-                                <input type="hidden" name="password" value="ChangeMe123!">
-                                <button class="btn btn-sm btn-outline-secondary w-100" type="submit">Lernender</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <form method="post" action="{{ request.get_full_path }}" novalidate>
                 {% csrf_token %}
                 {% if form.non_field_errors %}

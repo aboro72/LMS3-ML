@@ -12,6 +12,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("allauth.urls")),
     path("accounts/", include("apps.accounts.urls")),
+    path("install/<str:token>/", include("apps.installer.urls")),
     path("", include("apps.courses.urls")),
     path("", include("apps.exams.urls")),
     path("", include("apps.payments.urls")),

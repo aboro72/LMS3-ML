@@ -1,4 +1,6 @@
+from django.conf import settings
 from django.contrib import messages
+from django.http import Http404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -58,6 +60,8 @@ class ZertifikatDesignView(RollenMixin, View):
     rolle = Rolle.ORG_ADMIN
 
     def _get_org(self, slug):
+        if settings.SINGLE_SYSTEM_MODE and self.request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsbezogenes Zertifikat-Design ist im Einzelsystem deaktiviert.")
         if self.request.user.is_superuser:
             return get_object_or_404(Organisation, slug=slug)
         org_ids = self.request.user.profile.filter(

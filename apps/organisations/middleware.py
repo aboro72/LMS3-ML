@@ -11,6 +11,11 @@ class TenantRedirectMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Der Installationsassistent muss vor der ersten Migration erreichbar
+        # sein und darf deshalb keine Organisationstabelle voraussetzen.
+        if request.path.startswith("/install/"):
+            request.tenant_org = None
+            return self.get_response(request)
         request.tenant_org = self._active_organisation(request)
         response = self._redirect_from_configured_url(request)
         if response is not None:

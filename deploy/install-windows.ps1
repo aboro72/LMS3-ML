@@ -11,7 +11,7 @@
       postgresql  – PostgreSQL (Standard)
       mysql       – MariaDB / MySQL
       mssql       – Microsoft SQL Server Express
-      mongodb     – MongoDB (experimentell)
+      Redis       – Redis für Celery-Aufgaben
 
 .PARAMETER RepoUrl
     GitHub-URL des Repositories.
@@ -23,7 +23,7 @@
     Hostname der Anwendung. Standard: localhost
 
 .PARAMETER DbEngine
-    Datenbankmotor: postgresql | mysql | mssql | mongodb
+    Datenbankmotor: postgresql | mysql | mssql
     Standard: postgresql
 
 .PARAMETER DbPassword
@@ -45,10 +45,11 @@ param(
     [string]$RepoUrl    = "https://github.com/YOUR_USERNAME/LMS.git",
     [string]$InstallDir = "C:\aborolms",
     [string]$Domain     = "localhost",
-    [ValidateSet("postgresql","mysql","mssql","mongodb")]
+    [ValidateSet("postgresql","mysql","mssql")]
     [string]$DbEngine   = "postgresql",
     [string]$DbPassword = "",
-    [switch]$SkipIIS
+    [switch]$SkipIIS,
+    [switch]$Unattended
 )
 
 $ErrorActionPreference = "Stop"
@@ -58,6 +59,7 @@ $DbUser      = "aborolms"
 $AppPort     = 8000
 $ServiceName = "ABoroLMS"
 $LogDir      = "$InstallDir\logs"
+$InstallerToken = ([guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N"))
 
 # Passwort generieren
 if (-not $DbPassword -and $DbEngine -ne "mongodb") {
@@ -98,8 +100,10 @@ Write-Host " Domain     : $Domain"
 Write-Host " Datenbank  : $DbEngine"
 Write-Host " Port       : $AppPort"
 Write-Host "========================================================" -ForegroundColor Cyan
-$confirm = Read-Host "Fortfahren? [j/N]"
-if ($confirm -notmatch "^[jJ]$") { exit 0 }
+if (-not $Unattended) {
+    $confirm = Read-Host "Fortfahren? [j/N]"
+    if ($confirm -notmatch "^[jJ]$") { exit 0 }
+}
 
 # ===========================================================================#
 # SCHRITT 1 – Chocolatey                                                      #
@@ -112,6 +116,8 @@ if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
         'https://community.chocolatey.org/install.ps1'))
     Refresh-Path
 }
+Invoke-Choco "redis-64"
+Start-Service -Name "Redis" -ErrorAction SilentlyContinue
 
 # ===========================================================================#
 # SCHRITT 2 – Basis-Pakete (immer)                                            #
@@ -201,6 +207,7 @@ $Py   = "$InstallDir\.venv\Scripts\python.exe"
 & $Pip install --upgrade pip
 & $Pip install -r "$InstallDir\requirements\production.txt"
 & $Pip install waitress   # reiner Python WSGI-Server (kein C-Compiler nötig)
+$FieldEncryptionKey = & $Py -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 
 # Datenbankspezifische Python-Treiber
 switch ($DbEngine) {
@@ -338,6 +345,14 @@ DEFAULT_FROM_EMAIL=noreply@${Domain}
 
 PLATFORM_COMMISSION_PERCENT=15
 PAYMENT_DEMO_AUTOCONFIRM=False
+PAYMENTS_ENABLED=False
+PAYMENTS_ALLOW_SINGLE_SYSTEM=False
+REDIS_URL=redis://127.0.0.1:6379/0
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
+FIELD_ENCRYPTION_KEY=$FieldEncryptionKey
+INSTALLER_ENABLED=True
+INSTALLER_TOKEN=$InstallerToken
 STRIPE_PUBLIC_KEY=
 STRIPE_SECRET_KEY=
 PAYPAL_CLIENT_ID=
@@ -386,6 +401,17 @@ nssm set $ServiceName AppRotateFiles 1
 nssm set $ServiceName AppRotateBytes 5000000
 nssm set $ServiceName Start SERVICE_AUTO_START
 nssm start $ServiceName
+
+$CeleryServiceName = "ABoroLMS-Celery"
+nssm stop $CeleryServiceName 2>&1 | Out-Null
+nssm remove $CeleryServiceName confirm 2>&1 | Out-Null
+nssm install $CeleryServiceName $Py "-m celery -A config.celery worker --loglevel=INFO"
+nssm set $CeleryServiceName AppDirectory $InstallDir
+nssm set $CeleryServiceName AppEnvironmentExtra "DJANGO_SETTINGS_MODULE=config.settings.production"
+nssm set $CeleryServiceName AppStdout "$LogDir\celery.log"
+nssm set $CeleryServiceName AppStderr "$LogDir\celery-error.log"
+nssm set $CeleryServiceName Start SERVICE_AUTO_START
+nssm start $CeleryServiceName
 
 Write-Host "  Waitress läuft auf http://127.0.0.1:$AppPort"
 
@@ -487,9 +513,9 @@ Write-Host "========================================================" -Foregroun
 Write-Host ""
 Write-Host "Nächste Schritte:" -ForegroundColor White
 Write-Host ""
-Write-Host "  1. Superuser anlegen:"
-Write-Host "     cd $InstallDir"
-Write-Host "     .\.venv\Scripts\python.exe manage.py createsuperuser"
+Write-Host "  1. Installationsassistent öffnen:"
+Write-Host "     http://${Domain}/install/${InstallerToken}/"
+Write-Host "     Nach Abschluss wird der Assistent automatisch deaktiviert."
 Write-Host ""
 Write-Host "  2. Demo-Daten laden (optional):"
 Write-Host "     .\.venv\Scripts\python.exe manage.py create_demo_data"

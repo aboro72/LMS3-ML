@@ -14,7 +14,10 @@ def rollen_context(request):
         "system_navbar_color": getattr(settings, "SINGLE_SYSTEM_NAVBAR_COLOR", "#2b2e34"),
         "system_background_color": getattr(settings, "SINGLE_SYSTEM_BACKGROUND_COLOR", "#f9f9fb"),
         "system_logo_static": "branding/ml-gruppe-logo-weiss.png",
+        "payments_enabled": False,
     }
+    from apps.payments.services import payments_enabled
+    system_context["payments_enabled"] = payments_enabled()
     if not request.user.is_authenticated:
         return system_context
 
@@ -73,6 +76,7 @@ def rollen_context(request):
         **system_context,
         "ist_superadmin": ist_superadmin,
         "ist_trainer": Rolle.TRAINER in rollen,
+        "ist_learner": Rolle.LEARNER in rollen,
         "ist_exam_operator": Rolle.EXAM_OPERATOR in rollen,
         "ist_examiner": Rolle.EXAMINER in rollen,
         "ist_org_admin": Rolle.ORG_ADMIN in rollen,

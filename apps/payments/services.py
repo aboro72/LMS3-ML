@@ -1,4 +1,5 @@
 from django.core.exceptions import PermissionDenied
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
@@ -7,8 +8,19 @@ from apps.courses.models import Einschreibung
 from .models import AuditLog, OrganisationZahlungseinstellungen, Rechnung, Zahlung, Zahlungsart, Zahlungseinstellungen, Zahlungsstatus
 
 
+def payments_enabled():
+    """Return whether new payment operations are enabled for this installation."""
+    if not getattr(settings, "PAYMENTS_ENABLED", True):
+        return False
+    if getattr(settings, "SINGLE_SYSTEM_MODE", False) and not getattr(settings, "PAYMENTS_ALLOW_SINGLE_SYSTEM", False):
+        return False
+    return True
+
+
 @transaction.atomic
 def erstelle_zahlung(kurs, nutzer, zahlungsart):
+    if not payments_enabled():
+        raise PermissionDenied("Zahlungen sind in dieser Installation deaktiviert.")
     if zahlungsart not in dict(lade_zahlungseinstellungen(kurs.organisation).aktive_zahlungsarten()):
         raise PermissionDenied("Zahlungen oder diese Zahlungsart sind außerhalb der Entwicklungsumgebung derzeit deaktiviert.")
     gebuehr, trainer_anteil = Zahlung.berechne_aufteilung(kurs.preis)

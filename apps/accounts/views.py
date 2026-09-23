@@ -1,13 +1,16 @@
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import Http404
 from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.utils import timezone
 from django.views.generic import CreateView, TemplateView, UpdateView
 
 from .forms import OrganisationLoginForm, ProfilForm, RegisterForm
 from .models import Rolle, UserProfile
-from apps.organisations.models import Organisation
+from apps.organisations.models import Einladung, Organisation
+from apps.exams.models import PruefungsAnmeldung, PruefungsFreigabe, PruefungsVersuch
 from allauth.account.views import LoginView as AllauthLoginView
 
 
@@ -45,12 +48,66 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             zertifikate = zertifikate.filter(einschreibung__kurs__organisation=self.request.tenant_org)
         context["einschreibungen"] = einschreibungen
         context["zertifikate"] = zertifikate[:3]
+
+        learner_invitations = Einladung.objects.none()
+        learner_registrations = PruefungsAnmeldung.objects.none()
+        learner_releases = PruefungsFreigabe.objects.none()
+        learner_attempts = PruefungsVersuch.objects.none()
+        if self.request.user.is_authenticated:
+            learner_invitations = Einladung.objects.filter(
+                email__iexact=self.request.user.email,
+                rolle=Rolle.LEARNER,
+                pruefung__isnull=False,
+                akzeptiert_am__isnull=True,
+                abgelaufen_am__gt=timezone.now(),
+            ).select_related("organisation", "pruefung").order_by("-erstellt_am")
+            learner_registrations = PruefungsAnmeldung.objects.filter(
+                nutzer=self.request.user,
+            ).select_related("pruefung").order_by("-angemeldet_am")
+            learner_releases = PruefungsFreigabe.objects.filter(
+                nutzer=self.request.user,
+                widerrufen_am__isnull=True,
+            ).select_related("pruefung").order_by("-freigegeben_am")
+            learner_attempts = PruefungsVersuch.objects.filter(
+                nutzer=self.request.user,
+            ).select_related("pruefung").order_by("-gestartet_am")
+        context["learner_exam_invitations"] = learner_invitations
+        context["learner_exam_registrations"] = learner_registrations
+        context["learner_exam_releases"] = learner_releases
+        context["learner_exam_attempts"] = learner_attempts[:100]
+
+        trainer_org_ids = self.request.user.profile.filter(
+            rolle=Rolle.TRAINER, aktiv=True
+        ).values_list("organisation_id", flat=True)
+        trainer_attempts = PruefungsVersuch.objects.filter(
+            pruefung__organisation_id__in=trainer_org_ids,
+        ).select_related("nutzer", "pruefung").order_by("-gestartet_am")
+        context["trainer_exam_attempts"] = trainer_attempts[:100]
+        context["trainer_exam_counts"] = {
+            "laufend": trainer_attempts.filter(status=PruefungsVersuch.Status.LAUFEND).count(),
+            "ausstehend": trainer_attempts.filter(status=PruefungsVersuch.Status.AUSSTEHEND).count(),
+            "bestanden": trainer_attempts.filter(
+                status=PruefungsVersuch.Status.ABGESCHLOSSEN, bestanden=True
+            ).count(),
+            "nicht_bestanden": trainer_attempts.filter(
+                status__in=[
+                    PruefungsVersuch.Status.ABGESCHLOSSEN,
+                    PruefungsVersuch.Status.ABGELAUFEN,
+                    PruefungsVersuch.Status.ABGEBROCHEN,
+                ], bestanden=False
+            ).count(),
+        }
         return context
 
     def get(self, request, *args, **kwargs):
         from .context_processors import rollen_context
         roles = rollen_context(request)
-        if settings.SINGLE_SYSTEM_MODE and not (roles.get("ist_exam_operator") or roles.get("ist_superadmin")):
+        if settings.SINGLE_SYSTEM_MODE and not (
+            roles.get("ist_exam_operator")
+            or roles.get("ist_superadmin")
+            or roles.get("ist_trainer")
+            or roles.get("ist_learner")
+        ):
             return redirect("single_system_startseite")
         return super().get(request, *args, **kwargs)
 
@@ -74,6 +131,8 @@ class OrganisationRegisterView(CreateView):
     success_url = reverse_lazy("home")
 
     def dispatch(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE:
+            raise Http404("Mandantenregistrierung ist im Einzelsystem deaktiviert.")
         self.organisation = get_object_or_404(Organisation, slug=kwargs["org_slug"], aktiv=True)
         request.tenant_org = self.organisation
         request.session["active_organisation_id"] = self.organisation.pk
@@ -93,6 +152,8 @@ class OrganisationLoginView(AllauthLoginView):
     template_name = "account/login.html"
 
     def dispatch(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE:
+            raise Http404("Mandanten-Login ist im Einzelsystem deaktiviert.")
         self.organisation = get_object_or_404(Organisation, slug=kwargs["org_slug"], aktiv=True)
         request.tenant_org = self.organisation
         request.session["active_organisation_id"] = self.organisation.pk
@@ -176,7 +237,6 @@ ROLE_HELP_PAGES = {
         "quick_cards": [
             {"title": "Kurse", "text": "Kursdaten, Abschnitte, Lektionen und Medien pflegen."},
             {"title": "Pruefungen", "text": "Fragenkataloge erstellen und Pruefungen konfigurieren."},
-            {"title": "Umsatz", "text": "Bezahlte Kurse und Trainer-Anteile nachvollziehen."},
         ],
         "sections": [
             {"title": "Wichtige Bereiche", "text": "Hier findet die taegliche Trainerarbeit statt.", "items": [
@@ -184,7 +244,6 @@ ROLE_HELP_PAGES = {
                 {"title": "Lernpfade", "text": "Strukturierte Kursreihen erstellen: Grunddaten speichern, Kurse hinzufuegen, Reihenfolge setzen und veroeffentlichen.", "url_name": "trainer_learning_path_list", "link_text": "Lernpfade verwalten"},
                 {"title": "Fragenkataloge", "text": "Sammlung von Fragen, Antworten, Freitexten und Zuordnungen fuer spaetere Pruefungen.", "url_name": "trainer_catalog_list", "link_text": "Fragenkataloge oeffnen"},
                 {"title": "Pruefungen", "text": "Definiert Anzahl Fragen, Zeitlimit, Bestehensgrenze, Zufallslogik und Versuchsanzahl.", "url_name": "trainer_exam_list", "link_text": "Pruefungen verwalten"},
-                {"title": "Umsatz", "text": "Zeigt Einnahmen und Trainer-Anteil fuer bestaetigte Zahlungen.", "url_name": "trainer_revenue_dashboard", "link_text": "Umsatz ansehen"},
             ]},
             {"title": "Empfohlener Kursaufbau", "text": "Ein sauberer Kurs entsteht in dieser Reihenfolge.", "items": [
                 {"title": "1. Kursgrunddaten", "text": "Titel, Slug, Beschreibung, Organisation, Preis und Veroeffentlichung setzen."},

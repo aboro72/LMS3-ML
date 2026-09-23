@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.certificates",
     "apps.security",
+    "apps.installer",
 ]
 
 MIDDLEWARE = [
@@ -84,6 +85,8 @@ SINGLE_SYSTEM_PRIMARY_COLOR = config("SINGLE_SYSTEM_PRIMARY_COLOR", default="#0c
 SINGLE_SYSTEM_SECONDARY_COLOR = config("SINGLE_SYSTEM_SECONDARY_COLOR", default="#2fb2bf")
 SINGLE_SYSTEM_NAVBAR_COLOR = config("SINGLE_SYSTEM_NAVBAR_COLOR", default="#2b2e34")
 SINGLE_SYSTEM_BACKGROUND_COLOR = config("SINGLE_SYSTEM_BACKGROUND_COLOR", default="#f9f9fb")
+PAYMENTS_ENABLED = config("PAYMENTS_ENABLED", default=True, cast=bool)
+PAYMENTS_ALLOW_SINGLE_SYSTEM = config("PAYMENTS_ALLOW_SINGLE_SYSTEM", default=False, cast=bool)
 ACCOUNT_LOGIN_METHODS = {"email", "username"}
 ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]
 ACCOUNT_EMAIL_VERIFICATION = "optional"
@@ -132,5 +135,13 @@ STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY", default="")
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 PAYPAL_CLIENT_ID = config("PAYPAL_CLIENT_ID", default="")
 PAYPAL_SECRET = config("PAYPAL_SECRET", default="")
+
+# Der Assistent wird ausschließlich durch den Bootstrap mit einem geheimen
+# Token aktiviert und nach erfolgreicher Einrichtung wieder deaktiviert.
+INSTALLER_ENABLED = config("INSTALLER_ENABLED", default=False, cast=bool)
+INSTALLER_TOKEN = config("INSTALLER_TOKEN", default="")
+REDIS_URL = config("REDIS_URL", default="redis://127.0.0.1:6379/0")
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default=REDIS_URL)
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default=REDIS_URL)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

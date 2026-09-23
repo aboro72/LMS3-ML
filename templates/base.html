@@ -56,24 +56,24 @@
         <div class="collapse navbar-collapse" id="mainNav">
             <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
                 {% if user.is_authenticated %}
-                    {% if not operator_arbeitsplatz %}
-                    <li class="nav-item"><a class="nav-link" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_catalog' tenant_org.slug %}{% else %}{% url 'course_catalog' %}{% endif %}">Kurse</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_learning_path_list' tenant_org.slug %}{% else %}{% url 'learning_path_list' %}{% endif %}">Lernpfade</a></li>
+                    {% if not operator_arbeitsplatz and not ist_superadmin and not ist_trainer and not single_system_mode %}
+                    <li class="nav-item"><a class="nav-link" href="{% if tenant_org %}{% url 'tenant_course_catalog' tenant_org.slug %}{% else %}{% url 'course_catalog' %}{% endif %}">Kurse</a></li>
+                    {% if not single_system_mode %}<li class="nav-item"><a class="nav-link" href="{% if tenant_org %}{% url 'tenant_learning_path_list' tenant_org.slug %}{% else %}{% url 'learning_path_list' %}{% endif %}">Lernpfade</a></li>{% endif %}
                     {% endif %}
                     {% if ist_trainer %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">Trainer</a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_trainer_course_list' tenant_org.slug %}{% else %}{% url 'trainer_course_list' %}{% endif %}">Kursverwaltung</a></li>
-                                <li><a class="dropdown-item" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_trainer_learning_path_list' tenant_org.slug %}{% else %}{% url 'trainer_learning_path_list' %}{% endif %}">Lernpfade</a></li>
-                                <li><a class="dropdown-item" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_trainer_revenue_dashboard' tenant_org.slug %}{% else %}{% url 'trainer_revenue_dashboard' %}{% endif %}">Umsatz</a></li>
+                                {% if not single_system_mode %}<li><a class="dropdown-item" href="{% if tenant_org %}{% url 'tenant_trainer_learning_path_list' tenant_org.slug %}{% else %}{% url 'trainer_learning_path_list' %}{% endif %}">Lernpfade</a></li>{% endif %}
+                                {% if not single_system_mode %}<li><a class="dropdown-item" href="{% if tenant_org %}{% url 'tenant_trainer_revenue_dashboard' tenant_org.slug %}{% else %}{% url 'trainer_revenue_dashboard' %}{% endif %}">Umsatz</a></li>{% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 {% if ist_exam_operator and not ist_superadmin %}<li><a class="dropdown-item" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_catalog_list' tenant_org.slug %}{% else %}{% url 'trainer_catalog_list' %}{% endif %}">Fragenkataloge</a></li>{% endif %}
                                 {% if not ist_exam_operator and not ist_superadmin %}<li><a class="dropdown-item" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_exam_list' tenant_org.slug %}{% else %}{% url 'trainer_exam_list' %}{% endif %}">Prüfungen</a></li>{% endif %}
                             </ul>
                         </li>
                     {% endif %}
-                    {% if ist_exam_operator or ist_superadmin %}
+                    {% if ist_exam_operator and not ist_superadmin %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'trainer_catalog_list' %}">Fragenkataloge</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'trainer_exam_list' %}">Prüfungen</a></li>
                     {% endif %}
@@ -107,8 +107,10 @@
 <li><a class="dropdown-item" href="{% url 'system_email' %}">E-Mail</a></li>
 <li><a class="dropdown-item" href="{% url 'system_cert_design' %}">Zertifikat-Design</a></li>
 {% elif user.is_superuser %}<li><a class="dropdown-item" href="{% url 'superadmin_orgs' %}">Organisationen</a></li>{% endif %}
+                                {% if payments_enabled %}
                                 <li><a class="dropdown-item" href="{% url 'superadmin_payment_settings' %}">Zahlungseinstellungen</a></li>
                                 <li><a class="dropdown-item" href="{% url 'superadmin_payouts' %}">Auszahlungen</a></li>
+                                {% endif %}
                                 <li><a class="dropdown-item" href="{% url 'superadmin_audit_log' %}">Audit-Log</a></li>
                             </ul>
                         </li>
@@ -122,8 +124,8 @@
                         </form>
                     </li>
                 {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_course_catalog' tenant_org.slug %}{% else %}{% url 'course_catalog' %}{% endif %}">Kurse</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_learning_path_list' tenant_org.slug %}{% else %}{% url 'learning_path_list' %}{% endif %}">Lernpfade</a></li>
+                    {% if not single_system_mode %}<li class="nav-item"><a class="nav-link" href="{% if tenant_org %}{% url 'tenant_course_catalog' tenant_org.slug %}{% else %}{% url 'course_catalog' %}{% endif %}">Kurse</a></li>{% endif %}
+                    {% if not single_system_mode %}<li class="nav-item"><a class="nav-link" href="{% if tenant_org %}{% url 'tenant_learning_path_list' tenant_org.slug %}{% else %}{% url 'learning_path_list' %}{% endif %}">Lernpfade</a></li>{% endif %}
                     <li class="nav-item"><a class="nav-link" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_login' tenant_org.slug %}{% else %}{% url 'account_login' %}{% endif %}">Login</a></li>
                     <li class="nav-item"><a class="btn btn-sm btn-aboro" href="{% if tenant_org and not single_system_mode %}{% url 'tenant_register' tenant_org.slug %}{% else %}{% url 'register' %}{% endif %}">Registrieren</a></li>
                 {% endif %}

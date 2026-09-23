@@ -7,10 +7,12 @@
 #
 # Optionen:
 #   --webserver  nginx|apache2      Webserver (Standard: nginx)
-#   --db         postgresql|mysql|mongodb  Datenbank (Standard: postgresql)
+#   --db         postgresql|mysql          Datenbank (Standard: postgresql)
 #   --repo       <git-url>          GitHub-Repository-URL
 #   --domain     <hostname>         Domain der Anwendung (Standard: localhost)
 #   --db-pass    <passwort>         DB-Passwort (wird generiert wenn leer)
+#   --unattended                       Keine Rückfrage anzeigen
+#   --with-postfix                     Lokalen Postfix-Mailserver installieren
 #
 # Beispiele:
 #   sudo bash install-linux.sh
@@ -38,6 +40,9 @@ DB_NAME="aborolms"
 DB_USER="aborolms"
 DB_PASS=""
 DOMAIN="localhost"
+UNATTENDED=false
+WITH_POSTFIX=false
+INSTALLER_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
 
 # --------------------------------------------------------------------------- #
 # Argumente parsen
@@ -49,6 +54,8 @@ while [[ $# -gt 0 ]]; do
     --repo)      REPO_URL="$2";  shift 2 ;;
     --domain)    DOMAIN="$2";    shift 2 ;;
     --db-pass)   DB_PASS="$2";   shift 2 ;;
+    --unattended) UNATTENDED=true; shift ;;
+    --with-postfix) WITH_POSTFIX=true; shift ;;
     *) echo "Unbekanntes Argument: $1"; exit 1 ;;
   esac
 done
@@ -57,8 +64,8 @@ done
 case "$WEBSERVER" in nginx|apache2) ;; *)
   echo "Fehler: --webserver muss 'nginx' oder 'apache2' sein."; exit 1 ;;
 esac
-case "$DB" in postgresql|mysql|mongodb) ;; *)
-  echo "Fehler: --db muss 'postgresql', 'mysql' oder 'mongodb' sein."; exit 1 ;;
+case "$DB" in postgresql|mysql) ;; *)
+  echo "Fehler: --db muss 'postgresql' oder 'mysql' sein."; exit 1 ;;
 esac
 
 # Passwort generieren wenn nicht angegeben (für postgresql und mysql)
@@ -80,8 +87,10 @@ echo " Repo      : $REPO_URL"
 echo " Appdir    : $APP_DIR"
 echo " Domain    : $DOMAIN"
 echo "========================================================"
-read -rp "Fortfahren? [j/N] " CONFIRM
-[[ "$CONFIRM" =~ ^[jJ]$ ]] || exit 0
+if [[ "$UNATTENDED" != true ]]; then
+  read -rp "Fortfahren? [j/N] " CONFIRM
+  [[ "$CONFIRM" =~ ^[jJ]$ ]] || exit 0
+fi
 
 # --------------------------------------------------------------------------- #
 # Hilfsfunktion: Paket installieren
@@ -111,7 +120,12 @@ apt_install \
   libpangocairo-1.0-0 \
   libcairo2 \
   libgdk-pixbuf2.0-0 \
+  redis-server \
   "$WEBSERVER"
+
+if [[ "$WITH_POSTFIX" == true ]]; then
+  apt_install postfix
+fi
 
 # Datenbankspezifische Pakete
 case "$DB" in
@@ -247,14 +261,7 @@ echo "[6/9] .env-Datei erstellen..."
 ENV_FILE="$APP_DIR/.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
-  if [[ "$DB" == "mongodb" ]]; then
-    DB_BLOCK="DB_ENGINE=mongodb
-DB_NAME=${DB_NAME}
-DB_HOST=localhost
-DB_PORT=27017
-DB_USER=
-DB_PASSWORD="
-  elif [[ "$DB" == "mysql" ]]; then
+  if [[ "$DB" == "mysql" ]]; then
     DB_BLOCK="DB_ENGINE=mysql
 DATABASE_URL=${DATABASE_URL}"
   else
@@ -280,6 +287,13 @@ STRIPE_PUBLIC_KEY=
 STRIPE_SECRET_KEY=
 PAYPAL_CLIENT_ID=
 PAYPAL_SECRET=
+REDIS_URL=redis://127.0.0.1:6379/0
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
+PAYMENTS_ENABLED=False
+PAYMENTS_ALLOW_SINGLE_SYSTEM=False
+INSTALLER_ENABLED=True
+INSTALLER_TOKEN=${INSTALLER_TOKEN}
 EOF
 
   chown "$APP_USER:$APP_USER" "$ENV_FILE"
@@ -341,6 +355,29 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now aborolms.service
+
+cat > /etc/systemd/system/aborolms-celery.service <<EOF
+[Unit]
+Description=ABoroLMS Celery Worker
+After=network.target redis-server.service
+Requires=redis-server.service
+
+[Service]
+User=${APP_USER}
+Group=${APP_USER}
+WorkingDirectory=${APP_DIR}
+EnvironmentFile=${APP_DIR}/.env
+Environment=DJANGO_SETTINGS_MODULE=config.settings.production
+ExecStart=${APP_DIR}/.venv/bin/celery -A config.celery worker --loglevel=INFO
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl enable --now redis-server.service
+systemctl enable --now aborolms-celery.service
 
 # ===========================================================================#
 # SCHRITT 9 – Webserver konfigurieren                                         #
@@ -431,8 +468,9 @@ echo "========================================================"
 echo ""
 echo "Nächste Schritte:"
 echo ""
-echo "  1. Superuser anlegen:"
-echo "     sudo -u ${APP_USER} ${APP_DIR}/.venv/bin/python ${APP_DIR}/manage.py createsuperuser"
+echo "  1. Installationsassistent öffnen:"
+echo "     http://${DOMAIN}/install/${INSTALLER_TOKEN}/"
+echo "     Nach Abschluss wird der Assistent automatisch deaktiviert."
 echo ""
 echo "  2. Demo-Daten laden (optional):"
 echo "     sudo -u ${APP_USER} ${APP_DIR}/.venv/bin/python ${APP_DIR}/manage.py create_demo_data"

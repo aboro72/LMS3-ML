@@ -5,12 +5,14 @@ from .base import *  # noqa: F403
 DEBUG = False
 PRODUCTION = True
 PAYMENT_DEMO_AUTOCONFIRM = False
+PAYMENTS_ENABLED = config("PAYMENTS_ENABLED", default=False, cast=bool)  # noqa: F405
+PAYMENTS_ALLOW_SINGLE_SYSTEM = config("PAYMENTS_ALLOW_SINGLE_SYSTEM", default=False, cast=bool)  # noqa: F405
 SINGLE_SYSTEM_MODE = config("SINGLE_SYSTEM_MODE", default=True, cast=bool)  # noqa: F405
 SINGLE_SYSTEM_ORGANISATION_SLUG = config("SINGLE_SYSTEM_ORGANISATION_SLUG", default="ml-gruppe")  # noqa: F405
 
 # --------------------------------------------------------------------------- #
 # Datenbankmotor
-# DB_ENGINE: postgresql | mysql | mssql | mongodb
+# DB_ENGINE: postgresql | mysql | mssql
 # --------------------------------------------------------------------------- #
 DB_ENGINE = config("DB_ENGINE", default="postgresql")  # noqa: F405
 
@@ -29,17 +31,6 @@ if DB_ENGINE == "mssql":
             },
         }
     }
-elif DB_ENGINE == "mongodb":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django_mongodb_backend",
-            "NAME": config("DB_NAME"),  # noqa: F405
-            "HOST": config("DB_HOST", default="localhost"),  # noqa: F405
-            "PORT": config("DB_PORT", default=27017, cast=int),  # noqa: F405
-            "USER": config("DB_USER", default=""),  # noqa: F405
-            "PASSWORD": config("DB_PASSWORD", default=""),  # noqa: F405
-        }
-    }
 elif DB_ENGINE == "mysql":
     # PyMySQL als reines Python-Fallback, falls mysqlclient nicht kompiliert
     try:
@@ -55,12 +46,15 @@ elif DB_ENGINE == "mysql":
     }
 else:
     # postgresql (Standard)
-    DATABASES = {
-        "default": dj_database_url.config(
-            default=config("DATABASE_URL"),  # noqa: F405
-            conn_max_age=600,
-        )
-    }
+    database_url = config("DATABASE_URL", default="")  # noqa: F405
+    if database_url:
+        DATABASES = {"default": dj_database_url.config(default=database_url, conn_max_age=600)}
+    elif INSTALLER_ENABLED:  # noqa: F405
+        # Temporäre Datenbank für den Web-Assistenten. Nach dem Speichern der
+        # PostgreSQL-Verbindung führt der Assistent Migrationen neu aus.
+        DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "installer.sqlite3"}}  # noqa: F405
+    else:
+        raise RuntimeError("DATABASE_URL fehlt. PostgreSQL-Verbindung in .env konfigurieren.")
 
 CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = True

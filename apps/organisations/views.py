@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -85,6 +86,11 @@ class OrgAdminDashboardView(RollenMixin, TemplateView):
     rolle = Rolle.ORG_ADMIN
     template_name = "organisations/org_admin.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from apps.courses.models import Einschreibung, Kurs
@@ -133,6 +139,8 @@ class OrgMemberListView(LoginRequiredMixin, ListView):
     context_object_name = "mitglieder"
 
     def dispatch(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         self.org = _get_org_for_inviter(request, kwargs["slug"])
         return super().dispatch(request, *args, **kwargs)
 
@@ -157,6 +165,8 @@ class OrgMemberListView(LoginRequiredMixin, ListView):
 class OrgEinladungCreateView(LoginRequiredMixin, View):
 
     def post(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_inviter(request, slug)
         ist_trainer = _ist_trainer_ohne_org_admin(request.user, org)
         if not settings.SINGLE_SYSTEM_MODE and org.max_nutzer and org.max_nutzer > 0:
@@ -224,12 +234,16 @@ class OrgEmailKonfigView(RollenMixin, View):
         return {"form": form, "org": org, "tenant_org": org}
 
     def get(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         config, _ = OrganisationEmailKonfiguration.objects.get_or_create(organisation=org)
         return render(request, "organisations/email_config.html",
                       self._ctx(org, OrganisationEmailKonfigForm(instance=config)))
 
     def post(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         config, _ = OrganisationEmailKonfiguration.objects.get_or_create(organisation=org)
         form = OrganisationEmailKonfigForm(request.POST, instance=config)
@@ -250,12 +264,16 @@ class OrgDesignView(RollenMixin, View):
         return {"form": form, "org": org}
 
     def get(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         design, _ = OrganisationDesign.objects.get_or_create(organisation=org)
         return render(request, "organisations/design_editor.html",
                       self._ctx(org, OrganisationDesignForm(instance=design)))
 
     def post(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         design, _ = OrganisationDesign.objects.get_or_create(organisation=org)
         form = OrganisationDesignForm(request.POST, request.FILES, instance=design)
@@ -281,12 +299,16 @@ class OrgStartseiteView(RollenMixin, View):
         }
 
     def get(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         seite, _ = OrganisationStartseite.objects.get_or_create(organisation=org)
         return render(request, "organisations/startseite_editor.html",
                       self._ctx(org, OrganisationStartseiteForm(instance=seite)))
 
     def post(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         seite, _ = OrganisationStartseite.objects.get_or_create(organisation=org)
         form = OrganisationStartseiteForm(request.POST, request.FILES, instance=seite)
@@ -316,11 +338,15 @@ class OrgStartseitePageBuilderView(RollenMixin, View):
         }
 
     def get(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         seite, _ = OrganisationStartseite.objects.get_or_create(organisation=org)
         return render(request, "organisations/startseite_pagebuilder.html", self._ctx(org, seite))
 
     def post(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE and request.path.startswith("/organisationen/"):
+            raise Http404("Organisationsverwaltung ist im Einzelsystem zentralisiert.")
         org = _get_org_for_admin(request, slug)
         seite, _ = OrganisationStartseite.objects.get_or_create(organisation=org)
         weiterleitung_form = OrganisationWeiterleitungForm(request.POST, instance=org)
@@ -349,11 +375,19 @@ class OrgStartseitePageBuilderView(RollenMixin, View):
 # --------------------------------------------------------------------------- #
 class OffentlicheStartseiteRedirectView(View):
     def get(self, request, slug):
+        if settings.SINGLE_SYSTEM_MODE:
+            return redirect("single_system_startseite")
         return redirect("org_public_home", slug=slug, permanent=True)
 
 
 class OffentlicheStartseiteView(TemplateView):
     template_name = "organisations/public_home.html"
+    single_system_route = False
+
+    def get(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE and not self.single_system_route:
+            return redirect("single_system_startseite")
+        return super().get(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -386,6 +420,8 @@ class OffentlicheStartseiteView(TemplateView):
 
 class SingleSystemStartseiteView(OffentlicheStartseiteView):
     """Zentrale Startseite ohne sichtbaren Organisations-Slug."""
+
+    single_system_route = True
 
     def get_context_data(self, **kwargs):
         self.kwargs["slug"] = settings.SINGLE_SYSTEM_ORGANISATION_SLUG
@@ -430,6 +466,8 @@ class SuperadminOrganisationenView(LoginRequiredMixin, ListView):
     context_object_name = "organisationen"
 
     def dispatch(self, request, *args, **kwargs):
+        if settings.SINGLE_SYSTEM_MODE:
+            raise Http404("Eine Organisationsübersicht gibt es im Einzelsystem nicht.")
         if not request.user.is_superuser:
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
